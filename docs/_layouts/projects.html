@@ -1,0 +1,29 @@
+---
+layout: page 
+---
+
+<div class="projects">
+
+{{ content }}
+
+<ul>
+{% for project_name in site.projects %}
+  <li><h2>{{ project_name }}</h2>
+  <ul>
+  {% for post in site.posts reversed %}
+
+  {% if post.project.name == project_name %}
+  <li>
+    
+      <a class="post-link" href="{{ post.url | relative_url }}">({{
+      post.project.part }}) - {{ post.title | escape }}</a>
+  </li>
+  {% endif %}
+  {% endfor %}
+  </ul>
+  </li>
+
+{% endfor %}
+</ul>
+
+</div>

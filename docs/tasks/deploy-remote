@@ -1,0 +1,3 @@
+#!/bin/sh
+
+rsync -avr --delete-after --delete-excluded _site/ spider@blog-remote:/var/www/htdocs/blog.hermes-technology.de
