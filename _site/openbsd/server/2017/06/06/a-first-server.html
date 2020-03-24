@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>A simple first server</title>
+  <meta name="description" content="I&#39;m setting up a simple server in OpenBSD. This includes installing OpenBSD and configuring the network. Also I needed to enable port-forwarding on my home r...">
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="http://localhost:4000/openbsd/server/2017/06/06/a-first-server.html">
+  <link rel="alternate" type="application/rss+xml" title="Hermes Technology Blog" href="/feed.xml">
+  
+  
+
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/manifest.json">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+	<meta name="theme-color" content="#ffffff">
+
+  
+  
+</head>
+
+
+  <body>
+
+    
+<script data-isso="//blog.hermes-technology.de/isso/" src="//blog.hermes-technology.de/isso/js/embed.min.js"></script>
+
+
+
+<header class="site-header" role="banner">
+
+  <div class="wrapper">
+    
+    
+    <a class="site-title" href="/">Hermes Technology Blog</a>
+  
+    
+      <nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+              <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+              <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          
+            
+            
+            <a class="page-link" href="/projects/">Projects</a>
+            
+          
+            
+            
+            <a class="page-link" href="/about/">About</a>
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+        </div>
+      </nav>
+    
+  </div>
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+
+	  
+
+	  <div class="project-nav">
+	  
+	  </div>
+
+	  <div class="project-banner">
+		  <img class="project-img" src="http://localhost:4000/assets/my-openbsd-server-project-banner.svg.png" alt="My OpenBSD server"/>
+		  <!--h1 class="project-title" itemprop="project banner">My OpenBSD server</h1-->
+
+	  <!--
+	  <h1 class="project-qualifier">2</h1>
+	  -->
+	  </div> 
+
+	  <h1 class="project-part">Part 2 of 4:</h1>
+
+	  	  <h1 class="post-title" itemprop="name headline">
+	  
+
+		
+		
+
+	    
+		  <a class="arrow arrow-left" role="button" href="/openbsd/server/2017/05/31/my-first-post.html"></a>
+		
+	  
+
+		
+		
+
+	    
+	  
+
+		
+		
+
+	    
+	  
+
+		
+		
+
+	    
+	  
+
+		
+		
+
+	    
+	  
+
+		
+		
+
+	    
+	  
+	  
+	  A simple first server
+	  
+	  
+
+		
+		
+
+		
+	  
+
+		
+		
+
+		
+	  
+
+		
+		
+
+		
+		  <a class="arrow arrow-right" role="button" href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html"></a>
+		
+	  
+
+		
+		
+
+		
+	  
+
+		
+		
+
+		
+	  
+
+		
+		
+
+		
+	  
+	  </h1>
+	  
+    <p class="post-meta">
+      <time datetime="2017-06-06T18:11:00+02:00" itemprop="datePublished">
+        
+        Jun 6, 2017
+      </time>
+      </p>
+	
+	
+      
+      <p class="author"><a href="/openbsd/server/2017/06/06/a-first-server.html#isso-thread">Comments</a></p>
+      
+	
+  
+  </header>
+
+
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Hello, last time I showed a sketch of my server infrastructure without explaining anything really. That’s where I’m going to start in this post. As a reminder I will include the picture again:</p>
+
+<figure>
+  <figcaption>
+<i>Figure 1: Server Infrastructure</i>
+</figcaption>
+  <p><img src="http://localhost:4000/assets/server-sketch.svg.png" alt="Server Infrastructure" title="Figure 1: Server Infrastructure" /></p>
+</figure>
+
+<p>At first I would like to give a quick overview of what I wanted to achieve with this infrastructure: I wanted to encapsulate as much as possible in virtual machines, that will care about the specific tasks my server should provide in the end. Right now I have a dedicated VM for this blog I’m writing, a cloud, a gitlab server and the host VM which cares about redirecting the different subdomain requests.</p>
+
+<p>But for an easy explanation I will try to start much simpler - actually I will start the same way that I did a few weeks ago. I will just have my OpenBSD server that shows a simple “Hello world!” html page. Starting with this simple setup I will develope the above infrastructure in small steps during the next posts.</p>
+
+<p>For better understanding and visualization I will always backup the explanations with some figures. Throughout those figures I will try to use the format as shown in <em>Figure 2</em> when necessary.</p>
+
+<figure>
+  <figcaption>
+<i>Figure 2: Component Box</i>
+</figcaption>
+  <p><img src="http://localhost:4000/assets/component-box.svg.png" alt="Component Box" title="Figure 2: Component Box" width="340px" height="150px" /></p>
+</figure>
+
+<h2 id="the-task-for-today">The task for today</h2>
+<p>As I already mentioned, today I will only create a simple http server on OpenBSD which is actually a very straight forward task. <em>Figure 3</em> shows the different components that are needed to achieve the desired functionality:</p>
+
+<p>At first I need to install OpenBSD somewhere and connect its NIC (Network Interface Card) to my router. For this first step I could also have installed it in a VM with virtualbox for example.</p>
+
+<p>Thereafter I need to enable port-forwarding and assign a static ip to the server in the router’s interface (I had to open the browser and go to 192.168.1.1 for the router’s webinterface).</p>
+
+<p>To always be sure to get the same static ip address from my router I will also configure the interface to use a static ip instead of dhcp.</p>
+
+<p>After enabling and configuring the httpd server I will be able to reach the webserver from anywhere in the www, provided that I know my public ip.
+So the last step would be to make the public ip reachable through a domain name.</p>
+
+<figure>
+  <figcaption>
+<i>Figure 3: First steps - Simple server</i>
+</figcaption>
+  <p><img src="http://localhost:4000/assets/step1-sketch.svg.png" alt="The first step" title="Figure 3: First steps - Simple server" /></p>
+</figure>
+
+<h2 id="openbsd-server---install-and-set-up">OpenBSD server - Install and set up</h2>
+
+<p>As you heard I want to build the whole server-setup using OpenBSD. This was my OS of choice, because it has a strong focus on security. So coming from the Linux world I had to learn a little bit about the workings of a BSD system, and just to anticipate it: I was positively surprised about the celarliness and easyness I had to deal with.</p>
+
+<p>Installing OpenBSD is easy and fast. I just had to follow the instructions at <a href="https://www.openbsd.org/faq/faq4.html">their homepage</a> and everything was set up well. After installing make sure that your system is connected to your LAN.</p>
+
+<p>&lt;div class=fromTheFuture &gt;</p>
+
+<p>+————————————————————————————————————————————–+
+| <strong>Doc, about the future…</strong>                                                                                                         |
++======================================================================================================================================+
+| I also have an <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#guided-installation-of-openbsd-for-the-host-vm">installation guide</a> now                            |
+| that you can read and see how I did react to each of the installation questions for the installation of a virtual machine on OpenBSD.|
++————————————————————————————————————————————–+</p>
+
+<p>&lt;/div&gt;</p>
+
+<p>After installing I also setup the <code class="language-plaintext highlighter-rouge">sudo</code> equivalent of OpenBSD called <code class="language-plaintext highlighter-rouge">doas</code>. For it to work just create a file called <code class="language-plaintext highlighter-rouge">/etc/doas.conf</code> and insert these lines:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>permit persist :wheel <span class="c">## permit all users from group wheel to gran root access via doas and let it pe persistent during the terminal session</span>
+permit nopass keepenv root
+</code></pre></div></div>
+
+<p>If you have problems setting up a working package mirror for OpenBSD, I found the easiest and always working method of creating a specific file in the <code class="language-plaintext highlighter-rouge">/etc/</code> directory, and filling it with my chosen mirror:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>doas <span class="nb">touch</span> /etc/installurl
+doas <span class="nb">echo</span> <span class="s2">"https://ftp.eu.openbsd.org/pub/OpenBSD/"</span> <span class="o">&gt;</span> /etc/installurl
+</code></pre></div></div>
+
+<p>Naturally you can choose any OpenBSD mirror you like. There is a list of possible mirrors located <a href="https://www.openbsd.org/ftp.html">here</a>.</p>
+
+<h3 id="some-nice-configurations">Some nice configurations</h3>
+
+<p>I also added some nice configuration for better working with the system:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /etc/doas.conf</span>
+permit persist setenv <span class="o">{</span> <span class="nt">-ENV</span> <span class="nv">PS1</span><span class="o">=</span><span class="nv">$DOAS_PS1</span> SSH_AUTH_SOCK <span class="o">}</span> :wheel
+permit nopass keepenv root
+</code></pre></div></div>
+
+<p>Adding these lines to your user’s and your root’s <code class="language-plaintext highlighter-rouge">.profile</code> file:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /root/.profile</span>
+<span class="nv">PS1</span><span class="o">=</span><span class="s2">"[</span><span class="se">\t</span><span class="s2"> - </span><span class="se">\d</span><span class="s2">]</span><span class="se">\n\u</span><span class="s2">@</span><span class="se">\H</span><span class="s2">:</span><span class="se">\w</span><span class="s2">[</span><span class="se">\s</span><span class="s2">]# "</span>
+<span class="nb">export </span>PS1
+<span class="nb">export </span><span class="nv">HISTFILE</span><span class="o">=</span>~/.sh_history
+</code></pre></div></div>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /home/user/.profile</span>
+<span class="nv">PS1</span><span class="o">=</span><span class="s2">"[</span><span class="se">\t</span><span class="s2"> - </span><span class="se">\d</span><span class="s2">]</span><span class="se">\n\u</span><span class="s2">@</span><span class="se">\H</span><span class="s2">:</span><span class="se">\w</span><span class="s2">[</span><span class="se">\s</span><span class="s2">]</span><span class="se">\n</span><span class="nv">$ </span><span class="s2">"</span>
+<span class="nb">export </span>PS1
+<span class="nv">DOAS_PS1</span><span class="o">=</span><span class="s2">"[</span><span class="se">\t</span><span class="s2"> - </span><span class="se">\d</span><span class="s2">]</span><span class="se">\n\u</span><span class="s2">@</span><span class="se">\H</span><span class="s2">:</span><span class="se">\w</span><span class="s2">[</span><span class="se">\s</span><span class="s2">]</span><span class="se">\n</span><span class="s2"># "</span>
+<span class="nb">export </span>DOAS_PS1
+<span class="nb">export </span><span class="nv">HISTFILE</span><span class="o">=</span>~/.sh_history
+</code></pre></div></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">export HISTFILE...</code>: makes the history persistent so its not lost after each session.</li>
+  <li>PS1: the terminal prompt</li>
+  <li>DOAS_PS1: the terminal prompt when executing doas</li>
+</ul>
+
+<h3 id="configuring-the-nic-static-ip">Configuring the NIC (static ip)</h3>
+
+<p>For proper functionality its easier to configure the OpenBSD server to obtain a static ip instead of relying on the router’s dhcp service. To achieve this, I had to change two files: <code class="language-plaintext highlighter-rouge">/etc/hostname.em0</code> and <code class="language-plaintext highlighter-rouge">/etc/mygate</code>. The name of your interface could be different which would also result in another filename <code class="language-plaintext highlighter-rouge">/etc/hostname.your-interface-name</code>. In a OpenBSD VM the interfaces are called vio0 for example. Resulting in the filename to be <code class="language-plaintext highlighter-rouge">hostname.vio0</code>.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /etc/hostname.em0 ##</span>
+inet static 192.168.1.250 255.255.255.0 <span class="c"># this will enable the static ip address 192.168.1.250 with a 255.255.255.0 netmask</span>
+</code></pre></div></div>
+
+<p>After configuring the static ip I had to make sure that there is a file called <code class="language-plaintext highlighter-rouge">/etc/mygate</code> which wasn’t present because I installed my OpenBSD Box with dhcp enabled on my NIC.
+I created the file as root and wrote my routers ip as the single line in the file.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /etc/mygate ## </span>
+192.168.1.1 <span class="c"># one line that specifies the gateway (in my case 192.168.1.1)</span>
+</code></pre></div></div>
+
+<h2 id="router-configuration">Router configuration</h2>
+<p>As every router and brand has its own way of configuration, I cannot tell you much about how you will be able to achieve this task. So I will roughly tell you how I did it (I am ommiting the router name and brand, as it would expose potential vulnerabilities that it could have that I don’t know of).
+For all configurations I had to open the web interface of my router at 192.168.1.1 and enter my password.</p>
+
+<h3 id="static-ip">Static IP</h3>
+<p>For the static ip I had to browse to a category called <em>LAN</em> where I could assign static IP addresses to specific link layer adresses (MACs). So supposed that your NIC has the MAC 12:34:56:78:9A:BC you would tell your router to assign the desired static ip to that MAC. In my case I assigned the ip 192.168.1.250.</p>
+
+<h3 id="port-forwarding">Port-forwarding</h3>
+<p>Port-forwarding at my routers interface could be found at Homenet -&gt; Port Forwarding. At this section I could create Port-forwarding rules for IPv4 and IPv6. I only created a rule for IPv4.
+I had to choose a service name: HTTP, the computer to forward the port to: 192.168.1.250, the transport protokoll: TCP and the Port range: 80-80.</p>
+
+<p><em>Attention</em>: When I created the rule I also had to enable a checkbox to activate that rule. Apart from the rules checkbox I also had to enable Port-forwarding as a whole in another dedicated checkbox on that site. This did cost me a little headache in the beginning because I didn’t see the specific rules checkbox when creating the port-forwarding rule and I wondered why the port-forwarding didn’t work.</p>
+
+<h2 id="domainname-and-ddns">Domainname and DDNS</h2>
+
+<p>In this section I will explain how I bought a domain name and enabled a DDNS client to update my ip changes to that domain name.</p>
+
+<h3 id="getting-a-domain">Getting a domain</h3>
+
+<p>There are a lot of domain registration services that you could use. But not all of them have a dynamic dns service included. I chose <a href="https://www.strato.de">Strato</a> which is a german hosting service. I bought the domain-name hermes-technology.de.</p>
+
+<p>You could also first try things out with a free service like <a href="https://www.noip.com/">noip</a>.</p>
+
+<h3 id="integrating-the-domain-in-the-server">Integrating the domain in the server</h3>
+
+<p>For proper configuration of the server and name resolving I configured my OpenBSD system to use the new domain name as the hostname.</p>
+
+<p>For this to work properly, I had to edit the following files (the explanation for the configuration is commented inline):</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /etc/myname ##</span>
+hermes-technology.de <span class="c"># one line that specifies the symbolic name of the host machine </span>
+</code></pre></div></div>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /etc/resolv.conf ##</span>
+nameserver 192.168.1.1 <span class="c"># the nameserver the resolver should query</span>
+lookup file <span class="nb">bind</span> <span class="c"># gethostbyname and gehostbyaddr should lookup in /etc/hosts first (file) and then ask the provided nameserver (bind)</span>
+</code></pre></div></div>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /etc/hosts ##</span>
+<span class="c"># The first two lines are the defaults, the last line again specifies my domain name with my static ip address</span>
+<span class="c"># These names will be used by the resolver that is configured to lookup in this file via /etc/resolv.conf</span>
+127.0.0.1   localhost
+::1     localhost
+192.168.1.250  hermes-technology.de
+</code></pre></div></div>
+
+<h4 id="making-the-public-ip-reachable-from-the-internet-ddns">Making the public ip reachable from the internet (DDNS)</h4>
+
+<p>My IPS, like most of the private Internet connections, frequently changes my public ip so I cannot assing a static ip to my domain name. A service to circumvent this problem is a so called dynamic DNS client, or short DDNS client on the server side. There are <strong>two possibilites</strong> for this to work: Either my <strong>router itself has a DDNS client</strong> that can resolve the host that I have bought my domainname from, or I will <strong>install a dedicated DDNS client</strong> on my OpenBSD server.</p>
+
+<p>As mentioned before, I bought my domain at the german service called Strato (www.strato.de). At this time my router had a few DDNS hosts that it could make a ddns update for, but Strato was not one of them. So I was left with the second choice: Installing a DDNS client on the OpenBSD server and configuring it to forward ip changes to the strato service.</p>
+
+<p>I decided to install the ddns client called ddclient which is already available in the official ports of OpenBSD. So it was as easy as calling <code class="language-plaintext highlighter-rouge">pkg_add ddclient</code> for installing it. Thereafter I was left with the configuration file in /etc/ddclient/ddclient.conf. I appended some lines at the bottom of the <code class="language-plaintext highlighter-rouge">ddclient.conf</code> file, so that it would look like this:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /etc/ddclient/ddclient.conf</span>
+
+<span class="c">## These lines were enabled by default</span>
+<span class="nv">daemon</span><span class="o">=</span>600              <span class="c"># check every 300 seconds</span>
+<span class="nv">syslog</span><span class="o">=</span><span class="nb">yes</span>              <span class="c"># log update msgs to syslog</span>
+<span class="nv">mail</span><span class="o">=</span>root               <span class="c"># mail all msgs to root</span>
+mail-failure<span class="o">=</span>root           <span class="c"># mail failed update msgs to root</span>
+<span class="nv">pid</span><span class="o">=</span>/var/run/ddclient/ddclient.pid  <span class="c"># record PID in file.</span>
+<span class="nv">ssl</span><span class="o">=</span><span class="nb">yes</span>                 <span class="c"># use ssl-support.  Works with</span>
+                    <span class="c"># ssl-library</span>
+
+<span class="c">## ... There were some commented lines in between</span>
+
+<span class="c"># This is the chunk I appended:</span>
+<span class="nv">use</span><span class="o">=</span>web
+<span class="nv">protocol</span><span class="o">=</span>dyndns2
+<span class="nv">server</span><span class="o">=</span>dyndns.strato.com
+<span class="nv">login</span><span class="o">=</span>hermes-technology.de
+<span class="nv">password</span><span class="o">=</span>somepassword
+hermes-technology.de
+</code></pre></div></div>
+
+<p>The configuration above has a few components:</p>
+<ul>
+  <li>The first <code class="language-plaintext highlighter-rouge">use=web</code> means, that the ddns server is reached through the internet.</li>
+  <li><code class="language-plaintext highlighter-rouge">protocol=dyndns2</code> specifies the ddns protocol that the destination server uses.</li>
+  <li><code class="language-plaintext highlighter-rouge">login=hermes-technology.de</code> is my login name for he server as provided by strato</li>
+  <li><code class="language-plaintext highlighter-rouge">password=somepassword</code> is the specific password for the ddns service</li>
+  <li>the last lines of the configuration specifies the domain names that should receive the DDNS updates I only update my main domain for DDNS as I have simple CNAME entries for all other subdomains that are thus reached through the same ip address as the main domain.</li>
+</ul>
+
+<p>I also enabled the ddclient Daemon in the service manager:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>doas rcctl <span class="nb">enable </span>ddclient
+</code></pre></div></div>
+<p>and started it:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>doas rcctl start ddclient
+</code></pre></div></div>
+
+<h2 id="start-httpd-and-show-your-website">Start httpd and show your website</h2>
+
+<p>At last I wanted to show a simple static html “Hello World!” page on my domain. For this to work I had to configure the <code class="language-plaintext highlighter-rouge">httpd</code> daemon, which is a simple http server from OpenBSD based on Apache.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">## /etc/httpd.conf</span>
+<span class="nv">ext_if</span><span class="o">=</span><span class="s2">"*"</span> <span class="c">## any interface is the external interface.. including my em0</span>
+
+server <span class="s2">"hermes-technology.de"</span> <span class="o">{</span>
+        
+        listen on <span class="nv">$ext_if</span> port 80 <span class="c">## listen on all interfaces on port 80</span>
+        
+        root <span class="s2">"/htdocs/hermes-technology.de"</span> <span class="c">## make /var/www/htdocs/hermes-technology.de my root website directory</span>
+<span class="o">}</span>
+
+types <span class="o">{</span>
+        include <span class="s2">"/usr/share/misc/mime.types"</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>After configurin the daemon I had to insert a <code class="language-plaintext highlighter-rouge">index.html</code> in my website’s directory:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd</span> /var/www/htdocs/hermes-technology.de/
+</code></pre></div></div>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">touch </span>index.html
+</code></pre></div></div>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">echo</span> <span class="s2">"Hello World!"</span> <span class="o">&gt;</span> index.html
+</code></pre></div></div>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>doas rcctl <span class="nb">enable </span>httpd
+doas rcctl start httpd
+</code></pre></div></div>
+
+<p>Now my “Hello World!” page will be shown at hermes-technology.de.</p>
+
+<h2 id="outlook">Outlook</h2>
+
+<p>In the next post I will setup an OpenBSD virtual machine on the main server that receives the http requests. This includes configuring our own DNS server <code class="language-plaintext highlighter-rouge">unbound</code> and setting up the firewall <code class="language-plaintext highlighter-rouge">pf</code> (see Figure 1).</p>
+
+  </div>
+
+   
+      
+      <section id="isso-thread"></section>
+      
+  
+
+  
+
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Hermes Technology Blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Hermes Technology Blog</li><li><a class="u-email" href="mailto:mail@hermes-technology.de">mail@hermes-technology.de</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/JanSurft"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">JanSurft</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
+</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="/js/toc.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript">
+   $(document).ready(function() {
+      $('#toc').toc({
+     listType: 'ul',
+   });
+    });
+</script>
+  </body>
+
+</html>

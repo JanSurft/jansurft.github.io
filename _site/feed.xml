@@ -1,0 +1,1716 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2020-03-24T13:49:38+01:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
+</subtitle><entry><title type="html">Use local images in minikube with podman - 3 methods</title><link href="http://localhost:4000/openbsd/server/2020/03/23/use-local-images-in-minikube-3-methods.html" rel="alternate" type="text/html" title="Use local images in minikube with podman - 3 methods" /><published>2020-03-23T12:04:00+01:00</published><updated>2020-03-23T12:04:00+01:00</updated><id>http://localhost:4000/openbsd/server/2020/03/23/use-local-images-in-minikube-3-methods</id><content type="html" xml:base="http://localhost:4000/openbsd/server/2020/03/23/use-local-images-in-minikube-3-methods.html">&lt;p&gt;I wanted to to do some kubernetes tests locally with minikube and found out that I couldn’t use locally built images. There where three methods depending on the use case that worked for me:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Use podman env&lt;/li&gt;
+  &lt;li&gt;Use a local registry on host and pull from that in minikube&lt;/li&gt;
+  &lt;li&gt;Use a registry in minikube and push into that from the host&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&quot;method-1---use-podman-env&quot;&gt;Method 1 - Use podman env&lt;/h1&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;c&quot;&gt;# start minikube with podman&lt;/span&gt;
+minikube start &lt;span class=&quot;nt&quot;&gt;--container-runtime&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;crio-o
+
+&lt;span class=&quot;c&quot;&gt;# wait until minikube is ready&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;eval&lt;/span&gt; &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;minikube podman-env&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# use podman-remote in the same terminal using a local Dockerfile on host, e.g.:&lt;/span&gt;
+podman-remote build &lt;span class=&quot;nt&quot;&gt;-f&lt;/span&gt; Dockerfile example:latest &lt;span class=&quot;nb&quot;&gt;.&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# images are then accessible in minikube podman via:&lt;/span&gt;
+podman-remote run &lt;span class=&quot;nt&quot;&gt;--image&lt;/span&gt; localhost/example:latest
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;method-2---use-a-local-registry-on-the-host&quot;&gt;Method 2 - Use a local registry on the host&lt;/h1&gt;
+
+&lt;p&gt;Make name resolution of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;registry.local&lt;/code&gt; point to your host&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# update /etc/hosts&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'%s\t%s\n'&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'127.0.0.1'&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'registry.local'&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;sudo tee&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; /etc/hosts
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Change the insecure registries entry in your container config file:&lt;/p&gt;
+
+&lt;div class=&quot;language-ini highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# /etc/containers/registries.conf
+&lt;/span&gt;
+&lt;span class=&quot;nn&quot;&gt;[registries.search]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;['docker.io', 'registry.fedoraproject.org', 'quay.io', 'registry.access.redhat.com', 'registry.centos.org']&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# If you need to access insecure registries, add the registry's fully-qualified name.
+# An insecure registry is one that does not have a valid SSL certificate or only does HTTP.
+&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;[registries.insecure]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;['registry.local']&lt;/span&gt;
+
+
+&lt;span class=&quot;c&quot;&gt;# If you need to block pull access from a registry, uncomment the section below
+# and add the registries fully-qualified name.
+#
+# Docker only
+&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;[registries.block]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;[]&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Run the local registry and push to it&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# run a local registry on the host&lt;/span&gt;
+podman run &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; 5000:5000 &lt;span class=&quot;nt&quot;&gt;--restart&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;always &lt;span class=&quot;nt&quot;&gt;--name&lt;/span&gt; registry registry:2
+&lt;span class=&quot;c&quot;&gt;# or start it if you already did that before&lt;/span&gt;
+podman start registry
+
+&lt;span class=&quot;c&quot;&gt;# if you alread have an image tag it correctly&lt;/span&gt;
+podman tag localhost/example registry.local:5000/example
+
+&lt;span class=&quot;c&quot;&gt;# push image to local registry&lt;/span&gt;
+podman push registry.local:5000/example
+
+&lt;span class=&quot;c&quot;&gt;# start minikube&lt;/span&gt;
+minikube start &lt;span class=&quot;nt&quot;&gt;--container-runtime&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;cri-o &lt;span class=&quot;nt&quot;&gt;--insecure-registry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;registry.local:5000&quot;&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# ssh into minikube and change host as well:&lt;/span&gt;
+minikube ssh &lt;span class=&quot;nt&quot;&gt;--&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;eval&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;printf &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;'%s&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\t&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;%s&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;'127.0.0.1'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;'registry.local'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; | sudo tee -a /etc/hosts&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;ssh into minikube and add the insecure registry:&lt;/p&gt;
+
+&lt;div class=&quot;language-ini highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# /etc/containers/registries.conf on minikube vm
+&lt;/span&gt;
+&lt;span class=&quot;nn&quot;&gt;[registries.search]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;['docker.io']&lt;/span&gt;
+
+&lt;span class=&quot;nn&quot;&gt;[registries.insecure]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;['registry.local']&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;method-3---use-a-registry-in-minikube&quot;&gt;Method 3 - Use a registry in minikube&lt;/h1&gt;
+
+&lt;p&gt;Change the insecure registries entry in your container config file:&lt;/p&gt;
+
+&lt;div class=&quot;language-ini highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# /etc/containers/registries.conf
+&lt;/span&gt;
+&lt;span class=&quot;nn&quot;&gt;[registries.search]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;['docker.io', 'registry.fedoraproject.org', 'quay.io', 'registry.access.redhat.com', 'registry.centos.org']&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# If you need to access insecure registries, add the registry's fully-qualified name.
+# An insecure registry is one that does not have a valid SSL certificate or only does HTTP.
+&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;[registries.insecure]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;['registry.local', 'registry.kube']&lt;/span&gt;
+
+
+&lt;span class=&quot;c&quot;&gt;# If you need to block pull access from a registry, uncomment the section below
+# and add the registries fully-qualified name.
+#
+# Docker only
+&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;[registries.block]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;[]&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;c&quot;&gt;# start minikube with registry addon&lt;/span&gt;
+minikube start &lt;span class=&quot;nt&quot;&gt;--container-runtime&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;crio-o &lt;span class=&quot;nt&quot;&gt;--addons&lt;/span&gt; registry
+
+&lt;span class=&quot;c&quot;&gt;# podman tag localhost/example $(minikube ip):5000/example&lt;/span&gt;
+
+&lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'%s\t%s\n'&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;minikube ip&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'registry.kube'&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;sudo tee&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; /etc/hosts
+
+podman push localhost/example &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;minikube ip&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;:5000/example
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name></name></author><summary type="html">An introduction to my OpenBSD server setup.</summary></entry><entry><title type="html">Let me introduce you</title><link href="http://localhost:4000/arduino/robot/maker/udooneo/2017/08/01/let-me-introduce-you.html" rel="alternate" type="text/html" title="Let me introduce you" /><published>2017-08-01T18:11:00+02:00</published><updated>2017-08-01T18:11:00+02:00</updated><id>http://localhost:4000/arduino/robot/maker/udooneo/2017/08/01/let-me-introduce-you</id><content type="html" xml:base="http://localhost:4000/arduino/robot/maker/udooneo/2017/08/01/let-me-introduce-you.html">&lt;p&gt;And now for something completely different - Number 1… the larch.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/the-larch.jpg&quot; alt=&quot;The larch&quot; title=&quot;the larch&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;… Number 3… the robot.&lt;/p&gt;
+
+&lt;p&gt;Hello dear reader,&lt;/p&gt;
+
+&lt;p&gt;I will now write about something completely different. It’s not about a larch, but I would like to build a robot! For backing up my explanations I include a figure that shows a rough overview on what this project is about, and how I would like to achieve my goals:&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;figcaption&gt;
+&lt;i&gt;Figure 1: Rob's concept&lt;/i&gt;
+&lt;/figcaption&gt;
+  &lt;p&gt;&lt;img src=&quot;http://localhost:4000/assets/rob-the-robot-env.svg.png&quot; alt=&quot;Robs concept&quot; title=&quot;Figure 1: Robs concept&quot; /&gt;&lt;/p&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I decided to distinguish between three ability domains for Rob:&lt;/p&gt;
+
+&lt;p&gt;Firstly, there is the &lt;strong&gt;Arduino microcontoller&lt;/strong&gt; (ARM Cortex-M4), which is responsible for all critical controlling that has to be done in real time. I also added the &lt;strong&gt;Adafruit Motorshield&lt;/strong&gt; on my Udoo Neo board for an easy way to control any kind of motor that I want to integrate for the robot.
+Examples for those critical tasks would be a balancing controller or an automatic halt-system that fires before hitting walls or falling into an abyss. The balancing controller will, as soon as the robot will be running on two wheels, stabilize R.O.B. in real-time. For those tasks I will add specific parts like an array of ultrasonic sensors for distance queries or use existing components on the board like the magnetometer, accelerometer and the gyroscope.&lt;/p&gt;
+
+&lt;p&gt;Secondly, also on the Udoo Neo board, there is the &lt;strong&gt;ARM Cortex-A9&lt;/strong&gt;. The software running on there will perform simple computations and provide an interface for interactions with Rob. By way of example I could think about path finding algorithms and simple data storage and retrieval. It will enable the possibility to interact with the robot via WLAN or bluetooth. The Cortex-M4 and Cortex-A9 can communicate via an i²c bus.&lt;/p&gt;
+
+&lt;p&gt;At last I will also integrate the &lt;strong&gt;server&lt;/strong&gt;. So while being on this project I will also need the functionality of my server that I’m building in the “My OpenBSD Server” project. The server will be performing more expensive computations that include the establishment of neuronal networks for voice or face recognition.&lt;/p&gt;
+
+&lt;p&gt;So all in all the basic mechanical and sensor functionality will run on the microcontroller, more sophisticated operations and WLAN interfacing will be done with the arm, and the server provides some kind of AI.&lt;/p&gt;
+
+&lt;p&gt;While working on this project, the server I built is not out of my focus, I will continue to add more functionality and document my configurations in this blog. At the moment I also have to work on two non-private projects that consume a lot of resources, so I will be a little bit thwarted on the OpenBSD server and robot project for the next two month.&lt;/p&gt;
+
+&lt;p&gt;So I hope to write to you soon, until next post.&lt;/p&gt;</content><author><name></name></author><summary type="html">I've always wanted to build a robot, but yet I did not build one! In this introduction I will shortly write about what I want to do about this dilemma and the components I have in mind to solve it.</summary></entry><entry><title type="html">Making ssh more secure (UPDATE!)</title><link href="http://localhost:4000/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html" rel="alternate" type="text/html" title="Making ssh more secure (UPDATE!)" /><published>2017-06-21T00:00:00+02:00</published><updated>2017-06-21T00:00:00+02:00</updated><id>http://localhost:4000/2017/06/21/my-openbsd-server-3-making-ssh-more-secure</id><content type="html" xml:base="http://localhost:4000/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html">&lt;p&gt;UPDATE:
+I upgraded the whole ssh setup on client and server to be much more secure, thanks to PengouinBSD’s comment!&lt;/p&gt;
+
+&lt;p&gt;Hello again,&lt;/p&gt;
+
+&lt;p&gt;as I wrote in my &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#outlook&quot;&gt;last post&lt;/a&gt; I want to take care a bit about ssh connection and its security. So today’s task will be:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Create an ssh-key on my workstation and add the public key to the server’s authorized keys&lt;/li&gt;
+  &lt;li&gt;Configure the ssh daemon (sshd) on the server (no root permit, no password permit, only public key)&lt;/li&gt;
+  &lt;li&gt;Do the same for each virtual machine&lt;/li&gt;
+  &lt;li&gt;Enable a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fail2ban&lt;/code&gt; like functionality via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pf&lt;/code&gt;, banning specific IP addresses that tried to connect too often or too fast&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;A short outline for jumping around:&lt;/p&gt;
+
+&lt;div id=&quot;toc&quot;&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;intro&quot;&gt;Intro&lt;/h2&gt;
+
+&lt;p&gt;Establishing an ssh connection to the server is great if you want to remotely sanitize the system and do some maintenance work on the server. But of course by opening a new way to access the server for yourself you are also opening a new way for potential attacks on your server.&lt;/p&gt;
+
+&lt;!--Upon roaming through the net and looking for information I often stumbled across the people saying &quot;most secure way is to disallow ssh from the internet as a total&quot; and while that's true--&gt;
+
+&lt;p&gt;But as usual there are ways to make this connection more secure than default.&lt;/p&gt;
+
+&lt;h2 id=&quot;my-scenario&quot;&gt;My Scenario&lt;/h2&gt;
+
+&lt;p&gt;I had a server setup operating openssh on OpenBSD 6.1 that was disallowing root login totally and only allowing users to login ssh via their passwords. SSH service is running on port 22. This configuration is the default if you enabled ssh and chose not to permit root login for ssh during the installation process of OpenBSD. As I did for example do in &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#guided-installation-of-openbsd-for-the-host-vm&quot;&gt;this installation guide&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I want to change that into only allowing the user to login with public keys and the Google Authenticator App as a second factor.&lt;/p&gt;
+
+&lt;h2 id=&quot;ssh---public-key-authentication-for-the-server-and-each-vm&quot;&gt;SSH - Public key authentication for the server and each VM&lt;/h2&gt;
+
+&lt;p&gt;In this section I will write how I set up the ssh public key connection for my workstations and the server with the VMs running on it. This will include some paranoid precaution, the creation of the keys, the transferral of the public keys to the servers (main server and VMs) and setting up the ssh config on the workstation for establishing easy connections.&lt;/p&gt;
+
+&lt;p&gt;This section will be completely updated as for the comment of PengouinBSD. As I read by his resources, the public key setup that I chose was not really secure (at least it can be much more secure). At first I want to share those resources that PengouinBSD shared at the top of this new section:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://martin.kleppmann.com/2013/05/24/improving-security-of-ssh-private-keys.html&quot;&gt;Key derivation: Improving the security of your SSH private key files by Martin Kleppman&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.tedunangst.com/flak/post/new-openssh-key-format-and-bcrypt-pbkdf&quot;&gt;Key derivation: new openssh key format and bcrypt pbkdf by Ted Unangst&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://stribika.github.io/2015/01/04/secure-secure-shell.html&quot;&gt;Client/Server authentication: Secure Secure Shell by stribika&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;The resource by Martin Kleppmann is showing how you can implement a key derivation for ssh private keys. In the header of his post he is pointing out that his article is not relevant for newer versions of OpenSSH anymore as those are supporting the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-o&lt;/code&gt; Option mentioned by PengouinBSD which integrates a new stronger format with key derivation.&lt;/p&gt;
+
+&lt;p&gt;The second resource by Ted Unangst is about a new OpenSSH key format. The keyformat is using stronger key derivation functions which are enabled by default for keys using ed25519 signatures. Also he mentions how to upgrade the old keyformat to the new one.&lt;/p&gt;
+
+&lt;p&gt;In the last resource stribika provides a profound explanation on how to setup your server/client key authentication. I will mainly follow his setup and make my access security much better.&lt;/p&gt;
+
+&lt;h3 id=&quot;taking-precaution&quot;&gt;Taking precaution&lt;/h3&gt;
+
+&lt;p&gt;For setting up all the ssh configurations I disconnected my server and my workstation from the internet (not from the LAN) so there could not be any interceptions to the internal traffic when I setup the public key authentication.&lt;/p&gt;
+
+&lt;h3 id=&quot;create-an-ssh-key&quot;&gt;Create an ssh-key&lt;/h3&gt;
+
+&lt;p&gt;On the workstation I wanted to be able to reach my server from, I created an ssh-key:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ssh-keygen &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; ed25519 &lt;span class=&quot;nt&quot;&gt;-f&lt;/span&gt; ~/.ssh/id_ed25519 &lt;span class=&quot;nt&quot;&gt;-o&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; 64
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;copy-the-key-to-the-server&quot;&gt;Copy the key to the server&lt;/h3&gt;
+
+&lt;p&gt;Copying the key to the server for public key authentication of ssh sessions is easy.&lt;/p&gt;
+
+&lt;p&gt;Whenever I have the chance to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh-copy-id&lt;/code&gt;, I use &lt;a href=&quot;/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#with-ssh-copy-id&quot;&gt;that method&lt;/a&gt;. In other cases I do a variation of the &lt;a href=&quot;/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#without-ssh-copy-id&quot;&gt;second method&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;with-ssh-copy-id&quot;&gt;With ssh-copy-id&lt;/h4&gt;
+
+&lt;p&gt;After generating the key I needed to transfer it to my server.&lt;/p&gt;
+
+&lt;p&gt;There are several ways to do this. The first thing to try out is using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh-copy-id&lt;/code&gt; like so (the server’s IP is at 192.168.1.250 with the user &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jan-server&lt;/code&gt;):&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ssh-copy-id &lt;span class=&quot;nt&quot;&gt;-i&lt;/span&gt; ~/.ssh/id_ed25519 &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; 22 jan-server@192.168.1.250
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;without-ssh-copy-id&quot;&gt;Without ssh-copy-id&lt;/h4&gt;
+
+&lt;p&gt;There were cases when I couldn’t use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh-copy-id&lt;/code&gt;, what I usually did then was:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Opening an ssh session in a terminal to the ssh public key receiver via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh -p 22 myuser@192.168.1.250&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Open another terminal and copy the content of the public key file to the clipboard (&lt;strong&gt;Do not&lt;/strong&gt; use the file &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ssh/id_ed25519&lt;/code&gt; that is the private key file which should never leave your workstation but the file &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ssh/id_ed25519.pub&lt;/code&gt; the public key file belonging to that key)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt; ~/.ssh/id_ed25519.pub | xclip &lt;span class=&quot;nt&quot;&gt;-selection&lt;/span&gt; clipboard
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This last command needs &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xclip&lt;/code&gt; on your workstation (on a Debian like system install it via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo apt install xclip&lt;/code&gt;).&lt;/p&gt;
+
+&lt;p&gt;Append the clipboard content to the authorized-keys file like so (pasting in the terminal &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Ctrl-Shift-V&lt;/code&gt; or with an editor of your choice like vim):&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;ssh-ed25519 AAF23409SLFKJE02394FFTtlksdfowie3422DKdcweoDweoDFJwode99973fdOdjf9WT jan@jans-workstation&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; ~/.ssh/authorized_keys
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;changing-ssh-configuration-on-client-and-server&quot;&gt;Changing ssh configuration on client and server&lt;/h3&gt;
+
+&lt;p&gt;There are a lot of things to consider when changing the clients’ and servers’ configuration for OpenSSH.&lt;/p&gt;
+
+&lt;p&gt;For most of the configurations (nearly all), I followed &lt;a href=&quot;https://stribika.github.io/2015/01/04/secure-secure-shell.html&quot;&gt;the documentation by stribika&lt;/a&gt;. Thank you for this great setup!&lt;/p&gt;
+
+&lt;p&gt;Additionally I also set up a two factor authentication with the Google Authenticator App on my android device.&lt;/p&gt;
+
+&lt;h3 id=&quot;setting-up-client-and-server&quot;&gt;Setting up (client and server)&lt;/h3&gt;
+
+&lt;p&gt;Stribika proposed to change or generate the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/ssh/moduli&lt;/code&gt; file. Because mine already existed, I modified my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/ssh/moduli&lt;/code&gt; file like so (&lt;a href=&quot;https://stribika.github.io/2015/01/04/secure-secure-shell.html&quot;&gt;explained here&lt;/a&gt;):&lt;/p&gt;
+
+&lt;p&gt;~~~~  {.bash .numberLines startFrom=”1”}
+awk ‘$5 &amp;gt; 2000’ /etc/ssh/moduli &amp;gt; “${HOME}/moduli”
+wc -l “${HOME}/moduli” # make sure there is something left
+sudo cp /etc/ssh/moduli /etc/ssh/moduli.bak
+sudo mv “${HOME}/moduli” /etc/ssh/moduli&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+- *Line 1*: Get all lines from `/etc/ssh/moduli` that have a fifth column of a value greater than 2000 and copy them into a file in `~/moduli`.
+- *Line 2*: Make sure that there are still lines left in the generated file.
+- *Line 3*: Make a backup of `moduli` in case something goes wrong in the future.
+- *Line 4*: Copy the generated file over the existing one.
+
+### SSH configuration (server) ###
+
+
+#### The sshd_config ####
+
+To alter the configuration of my ssh daemon on the server, I had to manipulate the file `/etc/ssh/sshd_config` as shown below.
+
+The code snippet below shows the configuration that I definitely set for my sshd service (comments point out the different functionalities):
+
+~~~~ {.ini .numberLines startFrom=&quot;1&quot;}
+# /etc/ssh/sshd_config
+
+# Make sure that ssh protocol version 2 is used only!
+Protocol 2
+
+# Set the hostkeys that will be used for server authentication at the client
+# first preferred one:
+HostKey /etc/ssh/ssh_host_ed25519_key
+# fallback:
+HostKey /etc/ssh/ssh_host_rsa_key
+
+# Chose a port that is not &quot;standard&quot; so default port scanning on low ports fail
+# The port number can be a 16bit Integer. So the maximum is 65535
+Port 13423
+
+# Tell sshd which key exchange algorithms it is allowed to use. The resource by stribka at
+# https://stribika.github.io/2015/01/04/secure-secure-shell.html is explaining why these two (curve25519 and diffie-hellman sha256)
+# are the only chosen ones
+KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256
+
+# Only allow strong symmetric cyphers (see stribka's resource for detailed information)
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+
+# Only allow strong hmacs for message integrity (see stribka's resource for detailed information)
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,hmac-ripemd160,umac-128@openssh.com
+
+# I do not want to permit root login for ssh in general
+# If I would like to do that later I would choose to do it in a Match rule for specific addresses for example
+PermitRootLogin no
+
+# The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2
+# but this is overridden so installations will only check .ssh/authorized_keys
+AuthorizedKeysFile      .ssh/authorized_keys
+
+# Generally I want to disalow any kind of access
+# and handle it in user or address specific match rules
+# so disable pubkey authentication at first
+PubkeyAuthentication no
+
+# To disable tunneled clear text passwords:
+PasswordAuthentication no
+
+# allow challenge reponse authentication for 2 factor authentication with google authenticator
+ChallengeResponseAuthentication yes
+
+# We do not want to permit empty passwords in any case:
+PermitEmptyPasswords no
+
+# Generally disallow tcp forwarding
+AllowTcpForwarding no
+
+# override default of no subsystems
+Subsystem       sftp    /usr/libexec/sftp-server
+
+# only allow ssh sessions for members of the ssh-user group
+AllowGroups ssh-user
+
+# then when its a member of the group ssh-user (like my user jan-server will be) to be logged in, do some specific actions:
+Match Group ssh-user 
+		
+		# Allow tcp forwarding for the user jan-server (for enabling ssh session forwarding to my virtual machines)
+		AllowTcpForwarding yes
+		
+		# Allow password authentication (for allowing google authenticator OTP's) 
+		PasswordAuthentication yes
+		
+		# And allow pubkey authentication, so my generated pubkey can be used
+        PubkeyAuthentication yes
+
+		# Prompt for authentication in the following order: first ask for authenticaton of the public key then prompt for the two factor key on google-authenticator
+		AuthenticationMethods publickey,password
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;new-user-groups-and-keyfiles&quot;&gt;New user groups and keyfiles&lt;/h4&gt;
+
+&lt;p&gt;After changing the configuration file I created a group called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh-user&lt;/code&gt; on the server:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;doas groupadd ssh-user
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;and added my local user &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jan-server&lt;/code&gt; to that group:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;doas user mod -G ssh-user jan-server
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Then I deleted all host key files on the server and generated new ones:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;cd /etc/ssh
+
+# delete the host key files existing:
+rm ssh_host_*key*
+
+# generate new ones that we use (only those two mentioned in the sshd_config)
+ssh-keygen -t ed25519 -f ssh_host_ed25519_key -N &quot;&quot; &amp;lt; /dev/null
+ssh-keygen -t rsa -b 4096 -f ssh_host_rsa_key -N &quot;&quot; &amp;lt; /dev/null
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;google-authenticator-integration&quot;&gt;Google authenticator integration&lt;/h4&gt;
+
+&lt;p&gt;As an additional instance of security I wanted to integrate Google Authenticator as a second factor. I chose that because I already had it installed on my Android device. It is also &lt;a href=&quot;https://github.com/google/google-authenticator&quot;&gt;open source&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Google Authenticator supports the &lt;a href=&quot;https://de.wikipedia.org/wiki/HMAC-based_One-time_Password_Algorithmus&quot;&gt;HMAC-based One-time Password Algorithm&lt;/a&gt; (OATH-HOTP) as of &lt;a href=&quot;https://tools.ietf.org/html/rfc4226&quot;&gt;RFC 4226&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h5 id=&quot;pre-requisites&quot;&gt;Pre-Requisites&lt;/h5&gt;
+
+&lt;p&gt;I installed the following packages:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;doas pkg_add login_oath
+doas pkg_add node
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;login_oath&lt;/code&gt; is used for using the time based one time password compatible to the google authenticator.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;node&lt;/code&gt; is used for installing a convenient wrapper for setting up the key-file for the one-time-password service.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Afterwards I installed a tool for creating the keyfile for the Google Authenticator, I read the sourcecode beforehand to be sure its safe.:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;npm install  -g https://github.com/WIZARDISHUNGRY/totp-util
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h5 id=&quot;set-up-the-key-file-and-give-it-to-my-android-device&quot;&gt;Set up the key file and give it to my Android device&lt;/h5&gt;
+
+&lt;p&gt;On the server I then set up the keyfile by running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;totp-util&lt;/code&gt; as the user I would like to be able to log in with (in my case that user was &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jan-server&lt;/code&gt;).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;totp-util
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;I scanned the QR-code appearing on the console with my google authenticator app on my android phone.&lt;/p&gt;
+
+&lt;h5 id=&quot;configure-loginconf-for-the-otp-integration&quot;&gt;Configure login.conf for the OTP integration&lt;/h5&gt;
+
+&lt;p&gt;I added a new login class to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/login.conf&lt;/code&gt; at the end of the file (appending) like so:&lt;/p&gt;
+
+&lt;p&gt;~~~~ {.bash .numberLines startFrom=”1”}
+totppw:\
+	:auth-ssh=-totp,skey:\
+	:tc=default:&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  
+- *Line 1*: the name of the new login class.
+- *Line 2*: specifying the allowed login methods for ssh authentication to -totp (timebased one-time-password) and skey.
+- *Line 3*: use the defaults for everything else.
+
+I then recompiled the `login.conf` file:
+
+~~~~ {.bash}
+doas cap_mkd /etc/login.conf
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And changed my user’s login class to the newly generated &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;totppw&lt;/code&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;doas usermod -L totppw jan-server
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;at-the-end-of-the-server-configuration&quot;&gt;At the end of the server configuration&lt;/h4&gt;
+
+&lt;p&gt;I needed to reload the configuration file for the service:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas rcctl reload sshd
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;ssh-configuration-client&quot;&gt;SSH configuration (client)&lt;/h3&gt;
+
+&lt;p&gt;The configuration for the client is done in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/ssh/ssh_config&lt;/code&gt; and corresponds with the configurations that I chose for the server:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Host *
+    PasswordAuthentication yes
+	
+	ChallengeResponseAuthentication yes
+
+    PubkeyAuthentication yes
+
+	# this will choose the following algorithms for hostkey, ciphers and hmacs in the order from left to right (see Stribika's documentation for more info):
+    HostKeyAlgorithms ssh-ed25519-cert-v01@openssh.com,ssh-rsa-cert-v01@openssh.com,ssh-ed25519,ssh-rsa
+
+	Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+	
+	MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,hmac-ripemd160,umac-128@openssh.com
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;thats-what-i-can-do-now&quot;&gt;That’s what I can do now&lt;/h3&gt;
+
+&lt;p&gt;Now when I do &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh -p 13423 -i ~/.ssh/id_ed25519 jan-server@192.168.1.250&lt;/code&gt;, I am able to connect to my server via public key authentication and google authenticator like so (password are of course not shown in terminal input but I included them for better presentation):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;ssh -p 13423 -i ~/.ssh/id_ed25519 jan-server@192.168.1.250
+Enter passphrase for key '.ssh/id_ed25519': mypubkeypasswd
+Authenticated with partial success.
+user@192.168.1.13's password: 123456
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For my convenience I also added these lines into my workstation’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ssh/config&lt;/code&gt; file:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# ~/.ssh/config&lt;/span&gt;
+
+Host server-local
+	Port 13423
+	HostName 192.168.1.250
+	User jan-server
+	IdentityFile ~/.ssh/id_ed25519
+
+Host server-remote
+	Port 13423
+	HostName hermes-technology.de
+	User jan-server
+	IdentityFile ~/.ssh/id_ed25519
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now I can just do &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh server-local&lt;/code&gt; when I want to connect to my server from the local network or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh server-remote&lt;/code&gt; when I want to connect from a remote place.&lt;/p&gt;
+
+&lt;h3 id=&quot;configure-the-ssh-daemon-sshd-on-the-virtual-machines&quot;&gt;Configure the ssh daemon (sshd) on the virtual machines&lt;/h3&gt;
+
+&lt;p&gt;As you may have noticed from my last posts: I have a server infrastructure, where different subdomain requests are forwarded to virtual machines on the main server.&lt;/p&gt;
+
+&lt;p&gt;So for being able to do the same convenient ssh maintenance on my virtual machines, without ssh’ing to my main server and then connecting to the VMs via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vmctl&lt;/code&gt; &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#installing-and-configuring-nginx-on-the-host-vm&quot;&gt;as explained here&lt;/a&gt;, I have to configure the ssh daemons on the virtual machines as well and enable the public key authentication.&lt;/p&gt;
+
+&lt;p&gt;I will explain how I did it on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host-vm&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Because OpenBSD on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host-vm&lt;/code&gt;  was installed as explained in the &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#guided-installation-of-openbsd-for-the-host-vm&quot;&gt;installation guide in my last post&lt;/a&gt;, the ssh daemon is enabled by default and root login is prohibited.&lt;/p&gt;
+
+&lt;p&gt;On my workstation I logged in via ssh into my main server:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ssh server-local
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then I logged into the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;foo-vm&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;vmctl console host-vm
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To copy the ssh public key &lt;a href=&quot;/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#create-an-ssh-key&quot;&gt;that I generated on my workstation&lt;/a&gt;, I chose the manual method without &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh-copy-id&lt;/code&gt; as explained &lt;a href=&quot;/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#without-ssh-copy-id&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Thereafter I first configured the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/ssh/moduli&lt;/code&gt; file as explained &lt;a href=&quot;/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#setting-up-client-and-server&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Then I followed &lt;a href=&quot;/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#ssh-configuration-server&quot;&gt;the sshd configrations on the server&lt;/a&gt; and did some modifications in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sshd_config&lt;/code&gt; file:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;On &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;line 14&lt;/code&gt; I changed the ssh Port to 22 (Nobody can access the ssh service on my virtual machine without reaching my main server, so if the attacker is already on the main server nothing matters anymore :-D).&lt;/li&gt;
+  &lt;li&gt;I also &lt;strong&gt;deleted&lt;/strong&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;line 62&lt;/code&gt; about allowing tcp forwarding (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AllowTcpForwarding yes&lt;/code&gt;), because it is unlikely that I will have nested VMs in the near future so I don’t need to forward ssh requests to somebody else.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Of course I also changed the user &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jan-server&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host&lt;/code&gt; as this is my username on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host-vm&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;I followed the creation of the user group &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh-user&lt;/code&gt; for allowing ssh login and integrated the Google Authenticator setup thereafter.&lt;/p&gt;
+
+&lt;p&gt;At the end I had to reload the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sshd&lt;/code&gt; config: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;doas rcctl reload sshd&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Now also the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host-vm&lt;/code&gt; accepts the same ssh-key that was generated for the main server.&lt;/p&gt;
+
+&lt;h3 id=&quot;access-virtual-machines-via-ssh-on-my-workstation&quot;&gt;Access virtual machines via ssh on my workstation&lt;/h3&gt;
+
+&lt;p&gt;For an easy connection to my virtual machines from my workstation I added some lines to my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ssh/config&lt;/code&gt; file (for each vm):&lt;/p&gt;
+
+&lt;p&gt;~~~~ {.bash .numberLines startFrom=”1”}&lt;/p&gt;
+&lt;h1 id=&quot;this-block-is-for-ssh-connection-when-im-in-the-local-network&quot;&gt;This block is for ssh connection when I’m in the local network:&lt;/h1&gt;
+&lt;p&gt;Host host-vm-local
+	Port 22
+	HostName 192.168.30.2
+	ProxyCommand ssh -A jan-server@192.168.1.250 -p 13423 -W %h:%p
+	User host&lt;/p&gt;
+
+&lt;h1 id=&quot;this-block-is-for-ssh-connection-when-im-at-a-remote-place&quot;&gt;This block is for ssh connection when I’m at a remote place:&lt;/h1&gt;
+&lt;p&gt;Host host-vm-remote
+	Port 22
+	HostName 192.168.30.2
+	ProxyCommand ssh -A jan-server@hermes-technology.de -p 13423 -W %h:%p
+	User host
+~~~~&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;em&gt;Line 3&lt;/em&gt;: The ssh port on the virtual machine.&lt;/li&gt;
+  &lt;li&gt;&lt;em&gt;Line 4&lt;/em&gt;: The local IP of the virtual machine as reachable from the main server.&lt;/li&gt;
+  &lt;li&gt;&lt;em&gt;Line 5&lt;/em&gt;: Enables the forwarding of the ssh request to the virtual machine.&lt;/li&gt;
+  &lt;li&gt;&lt;em&gt;Line 6&lt;/em&gt;: The user on the virtual machine.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Logging in to virtual machines from my workstation now can easily be done by executing e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh host-vm-local&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;make-pf-ban-ips-that-do-malicious-ssh-attempts&quot;&gt;Make PF ban IPs that do malicious ssh attempts&lt;/h2&gt;
+
+&lt;p&gt;I wanted to block certain IPs from reconnecting via ssh if there were too many attempts with wrong credentials or if those attempts have a frequency that exceeded a certain limitation.&lt;/p&gt;
+
+&lt;p&gt;So in short I wanted to react to brute force attackers like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fail2ban&lt;/code&gt; does.&lt;/p&gt;
+
+&lt;p&gt;In addition I want those addresses to expire after a certain amount of time.&lt;/p&gt;
+
+&lt;h3 id=&quot;enable-blocking-of-bruteforcers&quot;&gt;Enable blocking of bruteforcers&lt;/h3&gt;
+
+&lt;p&gt;For this task I had to modify the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/pf.conf&lt;/code&gt; and reload the firewall configuration.&lt;/p&gt;
+
+&lt;p&gt;I added a table that is persistent and can be updated with new members:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;table &amp;lt;bruters&amp;gt; persist
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I told &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pf&lt;/code&gt; that IPs listed in this list should be blocked by the server (this rule should be inserted early in your ruleset):&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;block quick from &amp;lt;bruters&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then I created a rule to update the brutes table for general connection attempts (not only ssh):&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pass inet proto tcp from any to &lt;span class=&quot;nv&quot;&gt;$localnet&lt;/span&gt; port &lt;span class=&quot;nv&quot;&gt;$services&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	flags S/SA keep state &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;max-src-conn 80, max-src-conn-rate 15/5, &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	overload &amp;lt;bruters&amp;gt; flush global&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;max-src-conn 80&lt;/code&gt; limits the maximum number of simultaneous TCP connections on my tcp services to 80.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;max-src-conn-rate 15/5&lt;/code&gt; limits the rate of new connections over a time interval to 15 connections in 5 seconds.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This will allow 80 connections from the same source and a connection rate of 15 connections in 5 seconds. Connections exceeding this limit will be added to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bruters&lt;/code&gt; table and are blocked from any connection to my server until they are removed from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bruters&lt;/code&gt; table.&lt;/p&gt;
+
+&lt;p&gt;Then I added another rule early in my ruleset that specifically blocks ssh bruteforcers. This rule is a little bit stricter on its limits:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pass quick proto tcp from any to any port 13423 \
+        flags S/SA keep state \
+        (max-src-conn 5, max-src-conn-rate 5/3, \
+        overload &amp;lt;bruters&amp;gt; flush global)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;enable-expiration-of-bruterforcers-over-time&quot;&gt;Enable expiration of bruterforcers over time&lt;/h3&gt;
+
+&lt;p&gt;For expiring IP addresses in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bruters&lt;/code&gt; table I added a cron job into the crontab file:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# /etc/crontab&lt;/span&gt;
+@daily root pfctl &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; brutes &lt;span class=&quot;nt&quot;&gt;-T&lt;/span&gt; expire 86400
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This cronjob will be executed daily and remove entries in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bruters&lt;/code&gt; table that exceed the duration of presence for 86400 seconds (24 hours).&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Now I’m able to login to ssh sessions from my workstation, only using my ed25519 key and the Google Authenticator prompt as second factor.&lt;/p&gt;
+
+&lt;p&gt;SSH sessions can be opened as easy as:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# for server from local network&lt;/span&gt;
+ssh server-local
+
+&lt;span class=&quot;c&quot;&gt;# for server from remote network&lt;/span&gt;
+ssh server-remote
+
+&lt;span class=&quot;c&quot;&gt;# for vms from local network (exchange &amp;lt;vm&amp;gt; with e.g. host-vm as showed above)&lt;/span&gt;
+ssh &amp;lt;vm&amp;gt;-local
+
+&lt;span class=&quot;c&quot;&gt;# for vms from remote network&lt;/span&gt;
+ssh &amp;lt;vm&amp;gt;-remote
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;“Insecure” plain password connections are not supported anymore.&lt;/p&gt;
+
+&lt;p&gt;Failing ssh connections will remembered and according IPs will be banned for the specified amounts of time as presented in the last section of this post.&lt;/p&gt;
+
+&lt;h2 id=&quot;outlook&quot;&gt;Outlook&lt;/h2&gt;
+
+&lt;p&gt;I’m not sure yet what I will be writing about in my next post. Maybe I will find out how to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;relayd&lt;/code&gt; as a substitute of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nginx&lt;/code&gt; &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#installing-and-configuring-nginx-on-the-host-vm&quot;&gt;for redirecting subdomain requests&lt;/a&gt; to my local VM IPs, then I will probably be writing about that (there is also &lt;a href=&quot;https://serverfault.com/questions/856807/openbsd-how-to-use-relayd-and-httpd-for-redirecting-subdomain-requests&quot;&gt;an open question&lt;/a&gt; for this on stack exchange). Maybe I will also write about a backup utility that I set up as a cronjob for doing frequent backups of my main-server and the VMs.&lt;/p&gt;
+
+&lt;p&gt;But until then I’m happy about comments and any suggestions that you have for me, “see” you soon.&lt;/p&gt;
+
+&lt;p&gt;Jan&lt;/p&gt;</content><author><name></name></author><summary type="html">I wanted my server's ssh access to be much more secure than default. This includes choosing strong algorithms for authentication, integrity and encription as well as setting up a two-factor login via Google Authenticator.</summary></entry><entry><title type="html">A virtualized network with OpenBSD’s vmm</title><link href="http://localhost:4000/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html" rel="alternate" type="text/html" title="A virtualized network with OpenBSD's vmm" /><published>2017-06-12T01:00:00+02:00</published><updated>2017-06-12T01:00:00+02:00</updated><id>http://localhost:4000/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network</id><content type="html" xml:base="http://localhost:4000/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html">&lt;p&gt;&lt;strong&gt;UPDATE:&lt;/strong&gt;
+As I already suggested in the outlook of my last post, I wanted to exchange &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nginx&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;relayd&lt;/code&gt; for redirection. I did this now, thanks to &lt;a href=&quot;https://serverfault.com/questions/856807/openbsd-how-to-use-relayd-and-httpd-for-redirecting-subdomain-requests/858849#858849&quot;&gt;an answered question on stackoverflow&lt;/a&gt;. See the new section: &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#configuring-relayd-on-the-host-vm&quot;&gt;Configuring relayd on the host-vm&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Hello dear reader,&lt;/p&gt;
+
+&lt;p&gt;in my last post I described the setup of a http server which is reachable through a public domain on OpenBSD. This time I would like to go a little bit further and extend the server with a network of virtual machines, where each machine can be reached by the name of the subdomain it should represent.&lt;/p&gt;
+
+&lt;h2 id=&quot;intro&quot;&gt;Intro&lt;/h2&gt;
+
+&lt;p&gt;For this setup to work, I needed to download two files from the OpenBSD site:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The installation file of the most recent OpenBSD system (at the time it was 6.1)&lt;/li&gt;
+  &lt;li&gt;The boot file (bsd.rd)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Afterwards I had to install the VM, configure it, duplicate it for the virtual network.&lt;/p&gt;
+
+&lt;p&gt;Then I had to configure the main server and everything worked like a charm in the end.&lt;/p&gt;
+
+&lt;p&gt;For better explenation I will include a similar figure as show in my last two posts.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;figcaption&gt;
+&lt;i&gt;Figure 1: Virtual Network on my server&lt;/i&gt;
+&lt;/figcaption&gt;
+  &lt;p&gt;&lt;img src=&quot;http://localhost:4000/assets/server-sketch-foo-bar.svg.png&quot; alt=&quot;Server Infrastructure&quot; title=&quot;Figure 1: Virtual Network on my server&quot; /&gt;&lt;/p&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;You can see that there are serveral components to be configured for the virtual network to work as desired in the end:&lt;/p&gt;
+
+&lt;p&gt;I need to…:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;…configure &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pf&lt;/code&gt; for redirection and NAT&lt;/li&gt;
+  &lt;li&gt;…configure &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;unbound&lt;/code&gt; for acting as a DNS server&lt;/li&gt;
+  &lt;li&gt;…create three different VMs (host-vm, foo-vm, bar-vm)&lt;/li&gt;
+  &lt;li&gt;…connect the VMs to a virtual switch called “localnet”&lt;/li&gt;
+  &lt;li&gt;…configure &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;relayd&lt;/code&gt; on the host-vm for redirection of subdomain requests&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;outline&quot;&gt;Outline&lt;/h3&gt;
+
+&lt;p&gt;Here a short outline to jump back and forth (turn off &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;noscript&lt;/code&gt; for a second to see it :-) ):&lt;/p&gt;
+
+&lt;div id=&quot;toc&quot;&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;create-the-vms&quot;&gt;Create the VMs&lt;/h2&gt;
+
+&lt;p&gt;This section will deal about creating a raw disk image and installing OpenBSD on it via the OpenBSD included &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vmd&lt;/code&gt; framework.
+This includes downloading some necessary resources and creating and installing a VM with the application called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vmctl&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Afterwards the created installation will be duplicated and set up for the different VMs.&lt;/p&gt;
+
+&lt;h3 id=&quot;create-the-host-vm&quot;&gt;Create the Host VM&lt;/h3&gt;
+
+&lt;h4 id=&quot;choose-my-mirror-to-download-from&quot;&gt;Choose my mirror to download from&lt;/h4&gt;
+
+&lt;p&gt;There are many mirrors that I could choose from: listed &lt;a href=&quot;https://www.openbsd.org/ftp.html&quot;&gt;here&lt;/a&gt; on the OpenBSD website.&lt;/p&gt;
+
+&lt;h4 id=&quot;download-the-files&quot;&gt;Download the files&lt;/h4&gt;
+
+&lt;p&gt;At first I located the necessary files in a webbrowser on my system. I chose the mirror in Frankfurt, so the main url was &lt;a href=&quot;https://ftp.hostserver.de/pub/OpenBSD/&quot;&gt;https://ftp.hostserver.de/pub/OpenBSD/&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;There I chose the most recent OpenBSD version 6.1 and navigated to the directory for amd64 ending here: &lt;a href=&quot;https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/&quot;&gt;https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The necessary files are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;install61.fs&lt;/code&gt; the OpenBSD installation image, that I already downloaded when I created a bootable USB Stick for my OpenBSD Installation.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bsd.rd&lt;/code&gt; the boot image of OpenBSD.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I opened an ssh-session to the server and downloaded those files via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ftp&lt;/code&gt; (I’m using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ftp&lt;/code&gt; now and not &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wget&lt;/code&gt;, as it is in base, thank you for the comment Raf):&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~
+&lt;span class=&quot;nb&quot;&gt;mkdir &lt;/span&gt;vm-network
+&lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;vm-network
+ftp https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/install61.fs
+ftp https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/bsd.rd
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;As PengouinBSD correctly suggested in the comments, I should also check the downloaded files:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;cd vm-network
+ftp https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/SHA256.sig
+signify -Cp /etc/signify/openbsd-61-base.pub -x SHA256.sig install61.fs bsd.rd
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;From now on I assume you also have a folder called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vm-network&lt;/code&gt; in your user’s home directory.&lt;/p&gt;
+
+&lt;h4 id=&quot;create-a-raw-disk-file-and-start-the-installation&quot;&gt;Create a raw disk file and start the installation&lt;/h4&gt;
+
+&lt;p&gt;I’m located in my dedicated folder &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vm-network&lt;/code&gt;, where the previously downloaded files &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;install61.fs&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bsd.rd&lt;/code&gt; are located.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; ~/vm-network
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Within this folder I created a raw disk image called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host.drive&lt;/code&gt; with 8GB:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas vmctl create host.drive &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt; 8G
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And started installing on this disk interactively with a console:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas vmctl start &lt;span class=&quot;s2&quot;&gt;&quot;host-vm&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-b&lt;/span&gt; bsd.rd &lt;span class=&quot;nt&quot;&gt;-m&lt;/span&gt; 2G &lt;span class=&quot;nt&quot;&gt;-i&lt;/span&gt; 1 &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; host.drive &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; install61.fs
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;The options that are provided to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vmctl&lt;/code&gt; mean the following:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;start &quot;host-vm&quot;&lt;/code&gt;: start the virtual machine, naming it “host-vm”&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-c&lt;/code&gt;: immediately connect the console of the vm into the current shell&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-b bsd.rd&lt;/code&gt;: choose the specified image as boot kernel&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-m 2G&lt;/code&gt;: start the virtual machine with two gigabytes of memory&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-i 1&lt;/code&gt;: create a virtual network interface connected to that virtual machine&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-d host.drive&lt;/code&gt;: attach the raw disk file where to install OpenBSD on&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-d install61.fs&lt;/code&gt;: attach the image with the OpenBSD 6.1 installation files&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&amp;lt;div class=tip&amp;gt;&lt;/p&gt;
+
+&lt;p&gt;+———————————————————————————————————————————+
+|&lt;strong&gt;A TIP TO PREVENT FUTURE HEADACHES&lt;/strong&gt;                                                                                            |
++=================================================================================================================================+
+|If you ever run into the problem of this annoying Error when running the command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vmctl start ...&lt;/code&gt;:                              |
+|                                                                                                                                 |
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bash                                                                                                                          |
+|doas vmctl start &quot;myvm&quot; -i 1 -d xyz.drive                                                                                        |
+|vmctl: start vm command failed: No such file or directory                                                                        |
+|&lt;/code&gt;                                                                                                                              |
+|                                                                                                                                 |
+|then you’re probably missing the device file for the taps in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/dev&lt;/code&gt;. The installer creates 4 by default, so you’ll have to run…|
+|                                                                                                                                 |
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bash                                                                                                                          |
+|cd /dev; sh MAKEDEV tap4                                                                                                         |
+|&lt;/code&gt;                                                                                                                              |
+|                                                                                                                                 |
+|…and so on for each new tap device you need.                                                                                   |
+|                                                                                                                                 |
+|I took this tip from &lt;a href=&quot;http://openbsd-archive.7691.n7.nabble.com/vmd-upper-limit-on-number-of-vm-s-td312916.html&quot;&gt;here&lt;/a&gt;           |
+|when I ran into a simmilar problem.                                                                                              |
++———————————————————————————————————————————+&lt;/p&gt;
+
+&lt;p&gt;&amp;lt;/div&amp;gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;guided-installation-of-openbsd-for-the-host-vm&quot;&gt;Guided Installation of OpenBSD for the host-vm&lt;/h4&gt;
+
+&lt;p&gt;In &lt;em&gt;Table 1&lt;/em&gt; below I show the whole installation process and what I did including some comments.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;figcaption&gt;
+&lt;i&gt;Table 1: Guided Installation&lt;/i&gt;
+&lt;/figcaption&gt;
+  &lt;p&gt;+——————————————————————————-+——————————+——————————+
+| &lt;strong&gt;Terminal Output&lt;/strong&gt;                                                           |            &lt;strong&gt;My Input&lt;/strong&gt;      | &lt;strong&gt;Comments&lt;/strong&gt;                 |
++===============================================================================+==============================+==============================+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;   													                    |                              |                              |
+|Welcome to the OpenBSD/amd64 6.1 installation program.                         |                              | I want to install OpenBSD    |
+|(I)nstall, (U)pgrade, (A)utoinstall or (S)hell?                                |`I`                           |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;   													                    |                              |                              |
+|Terminal type? [vt220]                                                         |*return*                      |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |Call it host, because it will |
+|System hostname? (short form, e.g. 'foo')                                      |`host`                        |be the host for the vm net.   |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Available network interfaces are: vio0 vlan0                                   |*return*                      |Yes, configure vio0.          |
+|Which network interface do you wish to configure? (or 'done') [vio0]           |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|IPv4 address for vio0? (or 'dhcp' or 'none') [dhcp]                            |`192.168.30.2`                |ip address of my vm           |
+|&lt;/code&gt;                                                                            |                              |in the virtual network        |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Netmask for vio0? [255.255.255.0]                                              |*return*                      |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|IPv6 address for vio0? (or 'rtsol' or 'none') [none]                           |*return*                      |Don't need an IPv6 address.   |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Which network interface do you wish to configure? (or 'done') [done]           |*return*                      |I'm done.                     |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |The address of the router that|
+|Default IPv4 route? (IPv4 address or none)                                     |                              |manages my virtual network.   |
+|&lt;/code&gt;                                                                            |&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;192.168.30.1&lt;/code&gt;                |I chose 192.168.30.1 for the  |
+|                                                                               |                              |subnet 192.168.30.0/24.       |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|add net default: gateway 192.168.30.1                                          |                              |                              | 
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |The root domain (In the end it|
+|DNS domain name? (e.g. 'bar.com') [my.domain]                                  |`hermes-technology.de`        |will resolve to the hostname  |
+|&lt;/code&gt;                                                                            |                              |&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host.hermes-technology.de&lt;/code&gt;.  |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |My DNS nameserver should be   |
+|DNS nameservers? (IP address list or 'none') [none]                            |`192.168.30.1`                |serving on the virtual NIC    |
+|&lt;/code&gt;                                                                            |                              |with that IP.                 |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Password for root account? (will not echo)                                     |2x `mypasswd`                 |I did choose another password |
+|Password for root account? (again)                                             |                              |of course.. :D                |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Start sshd(8) by default? [yes]                                                |*return*                      |Yes I want to connect via ssh |
+|&lt;/code&gt;                                                                            |                              |later on.                     |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Change the default console to com0? [yes]                                      |*return*                      |sure...                       |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Which speed should com0 use? (or 'done') [9600]                                |*return*                      |definitely...                 |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Setup a user? (enter a lower-case loginname, or 'no') [no]                     |`host`                        |I want the user called &quot;host&quot; |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Full name for user host? [host]                                                |*return*                      |Don't need a full name -.-    |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Password for user host? (will not echo)                                        |2x `mypasswd`                 |Another safe password...      |
+|Password for user host? (again)                                                |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|WARNING: root is targeted by password guessing attacks, pubkeys are safer.     |*return*                      |I don't want to support a     |
+|Allow root ssh login? (yes, no, prohibit-password) [no]                        |                              |direct root login via ssh.    |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |List me the disks!            |
+|Available disks are: sd0 sd1.                                                  |`?`                           |                              |
+|Which disk is the root disk? ('?' for details) [sd0]                           |                              |                              |
+|&lt;/code&gt;																		    |							   |							  |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |Ok it seems the sd0 with 8G   |
+|sd0: Block Device (8.0G)                                                       |                              |is the one I want.            |
+|sd1: Block Device (0.3G)                                                       |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;   																		|							   |							  | 
+|Available disks are: sd0 sd1.                                                  |*return*                      |Yes, take sd0.                |
+|Which disk is the root disk? ('?' for details) [sd0]                           |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|No valid MBR or GPT.                                                           |*return*                      |Use the whole disk!           |
+|Use (W)hole disk MBR, whole disk (G)PT or (E)dit? [whole]                      |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Setting OpenBSD MBR partition to whole sd0...done.                             |                              |                              |
+|The auto-allocated layout for sd0 is:                                          |                              |                              |
+|#                size           offset  fstype [fsize bsize   cpg]             |                              |                              |
+|  a:           131.1M               64  4.2BSD   2048 16384     1 # /          |                              |                              |
+|  b:           182.1M           268480    swap                                 |                              |                              |
+|  c:          8192.0M                0  unused                                 |                              |                              |
+|  d:           201.7M           641504  4.2BSD   2048 16384     1 # /tmp       |                              |                              |
+|  e:           212.8M          1054560  4.2BSD   2048 16384     1 # /var       |*return*                      |Auto layout worked for me..   |
+|  f:           951.1M          1490304  4.2BSD   2048 16384     1 # /usr       |                              |                              |
+|  g:           542.6M          3438080  4.2BSD   2048 16384     1 # /usr/X11R6 |                              |                              |
+|  h:          2150.1M          4549376  4.2BSD   2048 16384     1 # /usr/local |                              |                              |
+|  i:          1044.4M          8952832  4.2BSD   2048 16384     1 # /usr/src   |                              |                              |
+|  j:          1340.8M         11091808  4.2BSD   2048 16384     1 # /usr/obj   |                              |                              |
+|  k:          1432.5M         13837856  4.2BSD   2048 16384     1 # /home      |                              |                              |
+|Use (A)uto layout, (E)dit auto layout, or create (C)ustom layout? [a]          |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Rounding size to bsize (32 sectors): 268416                                    |                              |                              |
+|Rounding offset to bsize (32 sectors): 641504                                  |                              |                              |
+|Rounding size to bsize (32 sectors): 413056                                    |                              |                              |
+|Rounding size to bsize (32 sectors): 435744                                    |                              |                              |
+|Rounding size to bsize (32 sectors): 1947776                                   |                              |                              |
+|Rounding size to bsize (32 sectors): 1111296                                   |                              |                              |
+|Rounding size to bsize (32 sectors): 4403456                                   |                              |                              |
+|Rounding size to bsize (32 sectors): 2138976                                   |                              |                              |
+|Rounding size to bsize (32 sectors): 2746048                                   |                              |                              |
+|Rounding size to bsize (32 sectors): 2933856                                   |                              |                              |
+|/dev/rsd0a: 131.1MB in 268416 sectors of 512 bytes                             |                              |                              |
+|4 cylinder groups of 32.77MB, 2097 blocks, 4224 inodes each                    |                              |                              |
+|/dev/rsd0k: 1432.5MB in 2933856 sectors of 512 bytes                           |                              |                              |
+|8 cylinder groups of 202.47MB, 12958 blocks, 25984 inodes each                 |                              |                              |
+|/dev/rsd0d: 201.7MB in 413056 sectors of 512 bytes                             |                              |                              |
+|4 cylinder groups of 50.42MB, 3227 blocks, 6528 inodes each                    |*return*                      |Don't need another disk.      |
+|/dev/rsd0f: 951.1MB in 1947776 sectors of 512 bytes                            |                              |                              |
+|5 cylinder groups of 202.47MB, 12958 blocks, 25984 inodes each                 |                              |                              |
+|/dev/rsd0g: 542.6MB in 1111296 sectors of 512 bytes                            |                              |                              |
+|4 cylinder groups of 135.66MB, 8682 blocks, 17408 inodes each                  |                              |                              |
+|/dev/rsd0h: 2150.1MB in 4403456 sectors of 512 bytes                           |                              |                              |
+|11 cylinder groups of 202.47MB, 12958 blocks, 25984 inodes each                |                              |                              |
+|/dev/rsd0j: 1340.8MB in 2746048 sectors of 512 bytes                           |                              |                              |
+|7 cylinder groups of 202.47MB, 12958 blocks, 25984 inodes each                 |                              |                              |
+|/dev/rsd0i: 1044.4MB in 2138976 sectors of 512 bytes                           |                              |                              |
+|6 cylinder groups of 202.47MB, 12958 blocks, 25984 inodes each                 |                              |                              |
+|newfs: reduced number of fragments per cylinder group from 27232 to 27120      |                              |                              |
+|to enlarge last cylinder group                                                 |                              |                              |
+|/dev/rsd0e: 212.8MB in 435744 sectors of 512 bytes                             |                              |                              |
+|5 cylinder groups of 52.97MB, 3390 blocks, 6784 inodes each                    |                              |                              |
+|Available disks are: sd1.                                                      |                              |                              |
+|Which disk do you wish to initialize? (or 'done') [done]                       |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Let's install the sets!                                                        |`disk`                        |Ok the sets are on the disk   |
+|Location of sets? (disk http or 'done') [http]                                 |                              |with &quot;install61.fs&quot; on.       |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Is the disk partition already mounted? [no]                                    |*return*                      |No the other disk is not      |
+|&lt;/code&gt;                                                                            |                              |mounted yet.                  |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Available disks are: sd0 sd1.                                                  |*return*                      |Ok sd0 was the 8G so sd1      |
+|Which disk contains the install media? (or 'done') [sd1]                       |                              |should be the one I want.     |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Which disk contains the install media? (or 'done') [sd1]                       |                              |                              |
+|  a:           572416             1024  4.2BSD   2048 16384 16142              |                              |mmh, yes seems as if partition|
+|  i:              960               64   MSDOS                                 |*return*                      |`a` contains the sets.        |
+|Available sd1 partitions are: a i.                                             |                              |                              |
+|Which sd1 partition has the install sets? (or 'done') [a]                      |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Pathname to the sets? (or 'done') [6.1/amd64]                                  |*return*                      |That pathname sounds good to  |
+|&lt;/code&gt;                                                                            |                              |me                            |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Select sets by entering a set name, a file name pattern or 'all'. De-select    |                              |                              |
+|sets by prepending a '-' to the set name, file name pattern or 'all'. Selected |                              |I want them all!!             |
+|sets are labelled '[X]'.                                                       |                              |                              |
+|    [X] bsd           [X] base61.tgz    [X] game61.tgz    [X] xfont61.tgz      |`all`                         |                              |
+|    [X] bsd.rd        [X] comp61.tgz    [X] xbase61.tgz   [X] xserv61.tgz      |                              |                              |
+|    [ ] bsd.mp        [X] man61.tgz     [X] xshare61.tgz                       |                              |                              |
+|Set name(s)? (or 'abort' or 'done') [done]                                     |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|    [X] bsd           [X] base61.tgz    [X] game61.tgz    [X] xfont61.tgz      |                              |                              |
+|    [X] bsd.rd        [X] comp61.tgz    [X] xbase61.tgz   [X] xserv61.tgz      |*return*                      |Ok, now you can go on.        |
+|    [X] bsd.mp        [X] man61.tgz     [X] xshare61.tgz                       |                              |                              |
+|Set name(s)? (or 'abort' or 'done') [done]                                     |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |There is no way around that.. |
+|Directory does not contain SHA256.sig. Continue without verification? [no]     |`yes`                         |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Installing bsd          100% |**************************| 10433 KB    00:00    |                              |                              |
+|Installing bsd.rd       100% |**************************|  9210 KB    00:00    |                              |                              |
+|Installing bsd.mp       100% |**************************| 10499 KB    00:00    |                              |                              |
+|Installing base61.tgz   100% |**************************| 52322 KB    00:04    |                              |                              |
+|Extracting etc.tgz      100% |**************************|   189 KB    00:00    |                              |                              |
+|Installing comp61.tgz   100% |**************************| 46070 KB    00:04    |                              |                              |
+|Installing man61.tgz    100% |**************************|  8719 KB    00:00    |*return*                      |                              |
+|Installing game61.tgz   100% |**************************|  2707 KB    00:00    |                              |That's it with the sets.      |
+|Installing xbase61.tgz  100% |**************************| 17497 KB    00:01    |                              |                              |
+|Extracting xetc.tgz     100% |**************************|  7006       00:00    |                              |                              |
+|Installing xshare61.tgz 100% |**************************|  4406 KB    00:00    |                              |                              |
+|Installing xfont61.tgz  100% |**************************| 39342 KB    00:02    |                              |                              |
+|Installing xserv61.tgz  100% |**************************| 13001 KB    00:00    |                              |                              |
+|Location of sets? (disk http or 'done') [done]                                 |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|What timezone are you in? ('?' for list) [Canada/Mountain]                     |                              |                              |
+|Africa/      Chile/       GB-Eire      Israel       Navajo       US/           |                              |                              |
+|America/     Cuba         GMT          Jamaica      PRC          UTC           |                              |                              |
+|Antarctica/  EET          GMT+0        Japan        PST8PDT      Universal     |                              |                              |
+|Arctic/      EST          GMT-0        Kwajalein    Pacific/     W-SU          |                              |                              |
+|Asia/        EST5EDT      GMT0         Libya        Poland       WET           |`?`                           |Aha... ok I guess there is    |
+|Atlantic/    Egypt        Greenwich    MET          Portugal     Zulu          |                              |a Berlin in Europe...         |
+|Australia/   Eire         HST          MST          ROC          posix/        |                              |                              |
+|Brazil/      Etc/         Hongkong     MST7MDT      ROK          posixrules    |                              |                              |
+|CET          Europe/      Iceland      Mexico/      Singapore    right/        |                              |                              |
+|CST6CDT      Factory      Indian/      NZ           Turkey                     |                              |                              |
+|Canada/      GB           Iran         NZ-CHAT      UCT                        |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|What timezone are you in? ('?' for list) [Canada/Mountain]                     |`Europe/Berlin`               |...so I take that.            |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|Saving configuration files...done.                                             |                              |                              |
+|Making all device nodes...done.                                                |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+
+|&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;                                                                           |                              |                              |
+|CONGRATULATIONS! Your OpenBSD install has been successfully completed!         |                              |                              |
+|To boot the new system, enter 'reboot' at the command prompt.                  |                              |Made it!                      |
+|When you login to your new system the first time, please read your mail        |                              |                              |
+|using the 'mail' command.                                                      |                              |                              |
+|&lt;/code&gt;                                                                            |                              |                              |
++——————————————————————————-+——————————+——————————+&lt;/p&gt;
+
+&lt;/figure&gt;
+
+&lt;p&gt;Ok now he is telling me to reboot the machine… But I can easily just choose to exit the vm via this key-sequence:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;~^D
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;So first enter the &lt;strong&gt;tilde&lt;/strong&gt; symbol and afterwards &lt;strong&gt;Ctrl-D&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;The tilde is not supposed to apear in the terminal input.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Thereafter I stopped the created virtual machine:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas vmctl stop &lt;span class=&quot;s2&quot;&gt;&quot;host-vm&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And made a copy of the installation:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas &lt;span class=&quot;nb&quot;&gt;cp &lt;/span&gt;host.drive host.drive.bak
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I also checked if everything installed fine:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas vmctl start &quot;host-vm&quot; -c -i 1 -d host.drive
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It should boot into the installed system now asking you for login and password in the end.&lt;/p&gt;
+
+&lt;p&gt;I configured &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;doas&lt;/code&gt; and added the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/installurl&lt;/code&gt; file as shown in my last &lt;a href=&quot;/openbsd/server/2017/06/06/a-first-server.html#openbsd-server---install-and-set-up&quot;&gt;post&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;duplicate-the-host-vm-for-other-vms-i-want&quot;&gt;Duplicate the Host VM for other VMs I want&lt;/h3&gt;
+
+&lt;p&gt;Now I could easily duplicate the created disk file for other needed VMs:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas &lt;span class=&quot;nb&quot;&gt;cp &lt;/span&gt;host.drive foo.drive
+doas &lt;span class=&quot;nb&quot;&gt;cp &lt;/span&gt;host.drive bar.drive
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Afterwards I started each VM and did some adjustments (I will only show what I did for the “foo” vm as the “bar” vm will be configured analogously:&lt;/p&gt;
+
+&lt;p&gt;Starting the VM as usual:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas vmctl start &lt;span class=&quot;s2&quot;&gt;&quot;foo-vm&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-i&lt;/span&gt; 1 &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; foo.drive
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Add the foo user:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas adduser
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I copied my terminal output:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Couldn't find /etc/adduser.conf: creating a new adduser configuration file
+Reading /etc/shells
+Enter your default shell: csh ksh nologin sh [ksh]: 
+Your default shell is: ksh -&amp;gt; /bin/ksh
+Default login class: authpf bgpd daemon default pbuild staff unbound 
+[default]: 
+Enter your default HOME partition: [/home]: 
+Copy dotfiles from: /etc/skel no [/etc/skel]: 
+Send welcome message?: /path/file default no [no]: 
+Do not send message(s)
+Prompt for passwords by default (y/n) [y]: 
+Default encryption method for passwords: auto blowfish [auto]: 
+Use option ``-silent'' if you don't want to see all warnings and questions.
+
+Reading /etc/shells
+Check /etc/master.passwd
+Check /etc/group
+
+Ok, let's go.
+Don't worry about mistakes. There will be a chance later to correct any input.
+Enter username []: foo
+Enter full name []: 
+Enter shell csh ksh nologin sh [ksh]: 
+Uid [1001]: 
+Login group foo [foo]: 
+Login group is ``foo''. Invite foo into other groups: guest no 
+[no]: wheel
+Login class authpf bgpd daemon default pbuild staff unbound 
+[default]: 
+Enter password []: 
+Enter password again []: 
+
+Name:        foo
+Password:    ******
+Fullname:    foo
+Uid:         1001
+Gid:         1001 (foo)
+Groups:      foo wheel
+Login Class: default
+HOME:        /home/foo
+Shell:       /bin/ksh
+OK? (y/n) [y]: 
+Added user ``foo''
+Copy files from /etc/skel to /home/foo
+Add another user? (y/n) [y]: n
+Goodbye!
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Deleted the host user:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas userdel host
+doas &lt;span class=&quot;nb&quot;&gt;rm&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-rf&lt;/span&gt; /home/host
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Configured the new hostname:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/hosts&lt;/span&gt;
+127.0.0.1       localhost
+::1             localhost
+192.168.30.10   foo.hermes-technology.de foo
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/myname&lt;/span&gt;
+foo.hermes-technology.de
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Alter the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/hostname.vio0&lt;/code&gt; for the correct ip (it will be 192.168.30.4 for the bar-vm):&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/hostname.vio0&lt;/span&gt;
+inet 192.168.30.3 255.255.255.0
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then I enabled httpd to show a “Hello from foo” html page.&lt;/p&gt;
+
+&lt;p&gt;Refer to my last post to see how to &lt;a href=&quot;/openbsd/server/2017/06/06/a-first-server.html#start-httpd-and-show-your-website&quot;&gt;setup httpd for this task&lt;/a&gt;:&lt;/p&gt;
+
+&lt;p&gt;I exited the VM.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;I did the above for each VM that I added to the virtual network.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;back-on-the-main-server&quot;&gt;Back on the main server&lt;/h2&gt;
+
+&lt;p&gt;Ok now that I had the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host-vm&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;foo-vm&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bar-vm&lt;/code&gt; successfully set up I had to do some configuration on the main server.&lt;/p&gt;
+
+&lt;p&gt;At first I created a virtual NIC that acts as a Router and DNS server to the virtual-machine-network.&lt;/p&gt;
+
+&lt;p&gt;Then I configured the internal firewall &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pf&lt;/code&gt; and the DNS service via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;unbound&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;At the end I configured the virtual machines for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vmd&lt;/code&gt; in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/vm.conf&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-virtual-network-interface-card-nic&quot;&gt;The virtual network interface card (NIC)&lt;/h3&gt;
+
+&lt;p&gt;Creating a virtual network device was very easy in OpenBSD.&lt;/p&gt;
+
+&lt;p&gt;I just had to create a file called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/hostname.vether0&lt;/code&gt; and insert the desired configuration:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;touch&lt;/span&gt; /etc/hostname.vether0
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;inet 192.168.30.1 255.255.255.0 NONE&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; /etc/hostname.vether0
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now on next reboot or after restarting the networking service I had the vether0 device at 192.168.30.1.&lt;/p&gt;
+
+&lt;h3 id=&quot;pf---the-openbsd-firewall&quot;&gt;PF - the OpenBSD firewall&lt;/h3&gt;
+
+&lt;p&gt;There is a configuration file for the firewall at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/pf.conf&lt;/code&gt;, I configured it like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#       $OpenBSD: pf.conf,v 1.54 2014/08/23 05:49:42 deraadt Exp $&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# See pf.conf(5) and /etc/examples/pf.conf&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;int_if&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;{ vether0 em0 }&quot;&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;##set skip on lo&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;##block return  # block stateless traffic&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;##pass          # establish keep-state&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# By default, do not permit remote connections to X11&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;##block return in on ! lo0 proto tcp to port 6000:6010&lt;/span&gt;
+
+&lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;block-policy drop
+&lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;loginterface egress
+&lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;skip on lo0
+
+&lt;span class=&quot;c&quot;&gt;## act as a nat&lt;/span&gt;
+match &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;all scrub &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;no-df random-id max-mss 1440&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+match out on egress inet from &lt;span class=&quot;o&quot;&gt;!(&lt;/span&gt;egress:network&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; to any nat-to &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;egress:0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;## allow all outgoing&lt;/span&gt;
+pass out quick inet
+pass &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;on &lt;span class=&quot;nv&quot;&gt;$int_if&lt;/span&gt; inet
+
+&lt;span class=&quot;c&quot;&gt;## redirect http and https to the host of the vms&lt;/span&gt;
+pass &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;on egress inet proto tcp from any to &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;egress&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; port &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; 80 443 &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; rdr-to 192.168.30.2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now incoming http traffic will be redirected to the host-vm as soon as it is up and running.&lt;/p&gt;
+
+&lt;p&gt;To apply the configuration changes I executed &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;doas pfctl -f /etc/pf.conf&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;And verified those changes via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;doas pfctl -sr&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;unbound---my-dns-name-server&quot;&gt;unbound - my DNS name server&lt;/h3&gt;
+
+&lt;p&gt;I enabled &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;unbound&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas rcctl &lt;span class=&quot;nb&quot;&gt;enable &lt;/span&gt;unbound
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And configured it the way I needed it:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /var/unbound/etc/unbound.conf                                                                                                                                                                       &lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# $OpenBSD: unbound.conf,v 1.7 2016/03/30 01:41:25 sthen Exp $&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;## I definately want the vether0 device act as a DNS name server for the virtual network&lt;/span&gt;
+server:
+        interface: 192.168.30.1
+        interface: 127.0.0.1
+        interface: ::1
+        &lt;span class=&quot;c&quot;&gt;#do-ip6: no&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;# override the default &quot;any&quot; address to send queries; if multiple&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# addresses are available, they are used randomly to counter spoofing&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#outgoing-interface: 192.0.2.1&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#outgoing-interface: 2001:db8::53&lt;/span&gt;
+
+        access-control: 0.0.0.0/0 refuse
+        access-control: 127.0.0.0/8 allow
+        access-control: ::0/0 refuse
+        access-control: ::1 allow
+        access-control: 192.168.1.0/24 allow
+
+        access-control: 192.168.30.0/24 allow &lt;span class=&quot;c&quot;&gt;## I want the virtual network to be allowed for access&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;-not-query-localhost&lt;/span&gt;: no
+
+        hide-identity: &lt;span class=&quot;nb&quot;&gt;yes
+        &lt;/span&gt;hide-version: &lt;span class=&quot;nb&quot;&gt;yes&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;# Uncomment to enable qname minimisation.&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# https://tools.ietf.org/html/draft-ietf-dnsop-qname-minimisation-08&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# qname-minimisation: yes&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;# Uncomment to enable DNSSEC validation.&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#auto-trust-anchor-file: &quot;/var/unbound/db/root.key&quot;&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;# Serve zones authoritatively from Unbound to resolver clients.&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# Not for external service.&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#local-zone: &quot;local.&quot; static&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#local-data: &quot;mycomputer.local. IN A 192.0.2.51&quot;&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#local-zone: &quot;2.0.192.in-addr.arpa.&quot; static&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#local-data-ptr: &quot;192.0.2.51 mycomputer.local&quot;&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;# UDP EDNS reassembly buffer advertised to peers. Default 4096.&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# May need lowering on broken networks with fragmentation/MTU issues,&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# particularly if validating DNSSEC.&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#edns-buffer-size: 1480&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;# Use TCP for &quot;forward-zone&quot; requests. Useful if you are making&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# DNS requests over an SSH port forwarding.&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#tcp-upstream: yes&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;# DNS64 options, synthesizes AAAA records for hosts that don't have&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# them. For use with NAT64 (PF &quot;af-to&quot;).&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#module-config: &quot;dns64 validator iterator&quot;&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#dns64-prefix: 64:ff9b::/96     # well-known prefix (default)&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;#dns64-synthall: no&lt;/span&gt;
+
+remote-control:
+        control-enable: &lt;span class=&quot;nb&quot;&gt;yes
+        &lt;/span&gt;control-use-cert: no
+        control-interface: /var/run/unbound.sock
+
+forward-zone:
+        name: &lt;span class=&quot;s2&quot;&gt;&quot;.&quot;&lt;/span&gt;
+        forward-addr: 192.168.1.1 &lt;span class=&quot;c&quot;&gt;## Forward the DNS Requests to my local real router&lt;/span&gt;
+        forward-addr: 74.82.42.42 &lt;span class=&quot;c&quot;&gt;# he.net&lt;/span&gt;
+        forward-addr: 2001:470:20::2 &lt;span class=&quot;c&quot;&gt;# he.net v6&lt;/span&gt;
+        forward-addr: 8.8.8.8 &lt;span class=&quot;c&quot;&gt;# google.com&lt;/span&gt;
+        forward-addr: 2001:4860:4860::8888 &lt;span class=&quot;c&quot;&gt;# google.com v6&lt;/span&gt;
+        forward-addr: 208.67.222.222 &lt;span class=&quot;c&quot;&gt;# opendns.com&lt;/span&gt;
+        forward-first: &lt;span class=&quot;nb&quot;&gt;yes&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# try direct if forwarder fails&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now DNS requests from the 192.168.30.0/24 subnet will be answered by the DNS server at 192.168.30.1.&lt;/p&gt;
+
+&lt;h3 id=&quot;vmd---what-goes-into-etcvmconf&quot;&gt;vmd - What goes into /etc/vm.conf&lt;/h3&gt;
+
+&lt;p&gt;Now my next task was to create the correct vm configuration, so that each vm would be connected to a local virtual switch managing the virtual network.&lt;/p&gt;
+
+&lt;p&gt;~~~~ {.bash .numberLines startFrom=”1”}&lt;/p&gt;
+&lt;h2 id=&quot;etcvmconf&quot;&gt;/etc/vm.conf&lt;/h2&gt;
+&lt;p&gt;files=  /home/user/vm-network/ # our disk files are at the previously created location (change “user” to your username)&lt;/p&gt;
+
+&lt;p&gt;vm host-vm { # we want a vm called “host-vm”
+        memory 2g #with 2gigs of memory
+        disk $files host.drive # running the host.drive
+        interface tap { lladdr 00:00:00:00:00:02 switch localnet } # on a network interface with the specified MAC on the localnet switch
+}&lt;/p&gt;
+
+&lt;p&gt;vm foo-vm {
+        memory 2g
+        disk $files foo.drive
+        interface tap { lladdr 00:00:00:00:00:03 switch localnet }
+}&lt;/p&gt;
+
+&lt;p&gt;vm bar-vm {
+        memory 2g
+        disk $files bar.drive
+        interface tap { lladdr 00:00:00:00:00:04 switch localnet }
+}&lt;/p&gt;
+
+&lt;p&gt;switch localnet { # this is the switch called “localnet”
+        add vether0 # where the virtual interface is added to
+}&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+
+So on lines 4, 10 and 16 I configured the specific VMs and on line 22 I configured the virtual switch that the VMs network interfaces are attached to.
+
+Then I enabled `vmd`:
+
+```bash
+doas rcctl enable vmd
+```
+
+And restarted the server:
+
+```bash
+doas reboot
+```
+
+### Configuring relayd on the host-vm ###
+
+The last task was the configuration of `relayd` on the host-vm.
+
+For this I logged into the host-vm, which should have been started automatically now at reboot:
+
+```bash
+doas vmctl console host-vm
+```
+
+Then I configured relayd to redirect requests to my subdomains:
+
+~~~~ {.ini}
+# /etc/relayd.conf                                                                                       
+
+## MACROS
+
+host_vm=192.168.30.2
+foo_vm=192.168.30.3
+bar_vm=192.168.30.4
+
+## TABLES
+
+table &amp;lt;foo_service&amp;gt; { $foo_vm }
+table &amp;lt;bar_service&amp;gt; { $bar_vm }
+
+## PROTOCOLS
+
+# define a new http protocol called &quot;reverseproxy&quot;
+http protocol &quot;reverseproxy&quot; {
+        
+		# match a request that has a Host value with &quot;foo.hermes-technology.de&quot;
+		# and forward that to the foo_service
+		# &quot;quick&quot; means that it will be handled as the last rule if it matches... no other will be processed
+        match request quick header &quot;Host&quot; value &quot;foo.hermes-technology.de&quot; \
+                forward to &amp;lt;foo_service&amp;gt;
+
+		match request quick header &quot;Host&quot; value &quot;www.hermes-technology.de&quot; \
+				forward to &amp;lt;foo_service&amp;gt;
+        
+        match request quick header &quot;Host&quot; value &quot;bar.hermes-technology.de&quot; \
+                forward to &amp;lt;bar_service&amp;gt;
+}
+
+## RELAYS
+
+# create a new relay called &quot;proxy&quot;
+# relays are for layer 7 (e.g. http)
+relay &quot;proxy&quot; {
+		# the relay should listen on the host ip on port 80
+        listen on $host_vm port 80
+        
+		# use the protocol &quot;reverseproxy&quot; we defined above
+        protocol &quot;reverseproxy&quot;
+        
+		# forwarding is enabled for the specified services
+        forward to &amp;lt;foo_service&amp;gt; port 80
+        forward to &amp;lt;bar_service&amp;gt; port 80
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The last task was to enable and start &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;relayd&lt;/code&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-{.bash}&quot;&gt;doas rcctl enable relayd
+doas rcctl start relayd
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;this-does-work-now&quot;&gt;This does work now&lt;/h2&gt;
+
+&lt;p&gt;Because I bought the domain hermes-technology.de and registered blog.hermes-technology.de as CNAME entries, the following does work:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Enter blog.hermes-technology.de anywhere into a webbrowser.&lt;/li&gt;
+  &lt;li&gt;The request lands at my main server’s ip (hermes-technology.de).&lt;/li&gt;
+  &lt;li&gt;PF redirects any http requests to the host-vm on 192.168.30.2.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;relayd&lt;/code&gt; on the host-vm redirects the “blog” subdomain request to the ip 192.168.30.3 of the blog-vm.&lt;/li&gt;
+  &lt;li&gt;The blog-vm and its httpd-service sends the response to its gateway 192.168.30.1&lt;/li&gt;
+  &lt;li&gt;The response on the vether0 gets a Network Address Translation (NAT) by &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pf&lt;/code&gt; to the router.&lt;/li&gt;
+  &lt;li&gt;The router sends the response to the client.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;outlook&quot;&gt;Outlook&lt;/h2&gt;
+
+&lt;p&gt;In the next post I will explain how I set up a proper ssh connection to my server with a public key. Which is much safer than using a password. Also I will explain how to configure ssh-tunneling so that you login to your virtual servers from the workstation where you’re maintaining your server from. At last I will explain how I configured &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pf&lt;/code&gt; to do an ssh protection like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fail2ban&lt;/code&gt; does.&lt;/p&gt;</content><author><name></name></author><summary type="html">I wanted to setup a network of virtual machines on my server. Each VM shall provide its specified service on a dedicated subdomain. I need to create the VMs, establish a virtual connection to my server, handle forwarding of packages with pf and redirecting subdomain requests.</summary></entry><entry><title type="html">A simple first server</title><link href="http://localhost:4000/openbsd/server/2017/06/06/a-first-server.html" rel="alternate" type="text/html" title="A simple first server" /><published>2017-06-06T18:11:00+02:00</published><updated>2017-06-06T18:11:00+02:00</updated><id>http://localhost:4000/openbsd/server/2017/06/06/a-first-server</id><content type="html" xml:base="http://localhost:4000/openbsd/server/2017/06/06/a-first-server.html">&lt;p&gt;Hello, last time I showed a sketch of my server infrastructure without explaining anything really. That’s where I’m going to start in this post. As a reminder I will include the picture again:&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;figcaption&gt;
+&lt;i&gt;Figure 1: Server Infrastructure&lt;/i&gt;
+&lt;/figcaption&gt;
+  &lt;p&gt;&lt;img src=&quot;http://localhost:4000/assets/server-sketch.svg.png&quot; alt=&quot;Server Infrastructure&quot; title=&quot;Figure 1: Server Infrastructure&quot; /&gt;&lt;/p&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;At first I would like to give a quick overview of what I wanted to achieve with this infrastructure: I wanted to encapsulate as much as possible in virtual machines, that will care about the specific tasks my server should provide in the end. Right now I have a dedicated VM for this blog I’m writing, a cloud, a gitlab server and the host VM which cares about redirecting the different subdomain requests.&lt;/p&gt;
+
+&lt;p&gt;But for an easy explanation I will try to start much simpler - actually I will start the same way that I did a few weeks ago. I will just have my OpenBSD server that shows a simple “Hello world!” html page. Starting with this simple setup I will develope the above infrastructure in small steps during the next posts.&lt;/p&gt;
+
+&lt;p&gt;For better understanding and visualization I will always backup the explanations with some figures. Throughout those figures I will try to use the format as shown in &lt;em&gt;Figure 2&lt;/em&gt; when necessary.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;figcaption&gt;
+&lt;i&gt;Figure 2: Component Box&lt;/i&gt;
+&lt;/figcaption&gt;
+  &lt;p&gt;&lt;img src=&quot;http://localhost:4000/assets/component-box.svg.png&quot; alt=&quot;Component Box&quot; title=&quot;Figure 2: Component Box&quot; width=&quot;340px&quot; height=&quot;150px&quot; /&gt;&lt;/p&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;the-task-for-today&quot;&gt;The task for today&lt;/h2&gt;
+&lt;p&gt;As I already mentioned, today I will only create a simple http server on OpenBSD which is actually a very straight forward task. &lt;em&gt;Figure 3&lt;/em&gt; shows the different components that are needed to achieve the desired functionality:&lt;/p&gt;
+
+&lt;p&gt;At first I need to install OpenBSD somewhere and connect its NIC (Network Interface Card) to my router. For this first step I could also have installed it in a VM with virtualbox for example.&lt;/p&gt;
+
+&lt;p&gt;Thereafter I need to enable port-forwarding and assign a static ip to the server in the router’s interface (I had to open the browser and go to 192.168.1.1 for the router’s webinterface).&lt;/p&gt;
+
+&lt;p&gt;To always be sure to get the same static ip address from my router I will also configure the interface to use a static ip instead of dhcp.&lt;/p&gt;
+
+&lt;p&gt;After enabling and configuring the httpd server I will be able to reach the webserver from anywhere in the www, provided that I know my public ip.
+So the last step would be to make the public ip reachable through a domain name.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;figcaption&gt;
+&lt;i&gt;Figure 3: First steps - Simple server&lt;/i&gt;
+&lt;/figcaption&gt;
+  &lt;p&gt;&lt;img src=&quot;http://localhost:4000/assets/step1-sketch.svg.png&quot; alt=&quot;The first step&quot; title=&quot;Figure 3: First steps - Simple server&quot; /&gt;&lt;/p&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&quot;openbsd-server---install-and-set-up&quot;&gt;OpenBSD server - Install and set up&lt;/h2&gt;
+
+&lt;p&gt;As you heard I want to build the whole server-setup using OpenBSD. This was my OS of choice, because it has a strong focus on security. So coming from the Linux world I had to learn a little bit about the workings of a BSD system, and just to anticipate it: I was positively surprised about the celarliness and easyness I had to deal with.&lt;/p&gt;
+
+&lt;p&gt;Installing OpenBSD is easy and fast. I just had to follow the instructions at &lt;a href=&quot;https://www.openbsd.org/faq/faq4.html&quot;&gt;their homepage&lt;/a&gt; and everything was set up well. After installing make sure that your system is connected to your LAN.&lt;/p&gt;
+
+&lt;p&gt;&amp;lt;div class=fromTheFuture &amp;gt;&lt;/p&gt;
+
+&lt;p&gt;+————————————————————————————————————————————–+
+| &lt;strong&gt;Doc, about the future…&lt;/strong&gt;                                                                                                         |
++======================================================================================================================================+
+| I also have an &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#guided-installation-of-openbsd-for-the-host-vm&quot;&gt;installation guide&lt;/a&gt; now                            |
+| that you can read and see how I did react to each of the installation questions for the installation of a virtual machine on OpenBSD.|
++————————————————————————————————————————————–+&lt;/p&gt;
+
+&lt;p&gt;&amp;lt;/div&amp;gt;&lt;/p&gt;
+
+&lt;p&gt;After installing I also setup the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo&lt;/code&gt; equivalent of OpenBSD called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;doas&lt;/code&gt;. For it to work just create a file called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/doas.conf&lt;/code&gt; and insert these lines:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;permit persist :wheel &lt;span class=&quot;c&quot;&gt;## permit all users from group wheel to gran root access via doas and let it pe persistent during the terminal session&lt;/span&gt;
+permit nopass keepenv root
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;If you have problems setting up a working package mirror for OpenBSD, I found the easiest and always working method of creating a specific file in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/&lt;/code&gt; directory, and filling it with my chosen mirror:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas &lt;span class=&quot;nb&quot;&gt;touch&lt;/span&gt; /etc/installurl
+doas &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;https://ftp.eu.openbsd.org/pub/OpenBSD/&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; /etc/installurl
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Naturally you can choose any OpenBSD mirror you like. There is a list of possible mirrors located &lt;a href=&quot;https://www.openbsd.org/ftp.html&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;some-nice-configurations&quot;&gt;Some nice configurations&lt;/h3&gt;
+
+&lt;p&gt;I also added some nice configuration for better working with the system:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/doas.conf&lt;/span&gt;
+permit persist setenv &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-ENV&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;PS1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$DOAS_PS1&lt;/span&gt; SSH_AUTH_SOCK &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; :wheel
+permit nopass keepenv root
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Adding these lines to your user’s and your root’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.profile&lt;/code&gt; file:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /root/.profile&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PS1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;[&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\t&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; - &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\d&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n\u&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\H&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\w&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\s&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;]# &quot;&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;PS1
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;HISTFILE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;~/.sh_history
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /home/user/.profile&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;PS1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;[&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\t&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; - &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\d&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n\u&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\H&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\w&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\s&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;PS1
+&lt;span class=&quot;nv&quot;&gt;DOAS_PS1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;[&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\t&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; - &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\d&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n\u&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\H&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\w&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\s&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;# &quot;&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;DOAS_PS1
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;HISTFILE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;~/.sh_history
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;export HISTFILE...&lt;/code&gt;: makes the history persistent so its not lost after each session.&lt;/li&gt;
+  &lt;li&gt;PS1: the terminal prompt&lt;/li&gt;
+  &lt;li&gt;DOAS_PS1: the terminal prompt when executing doas&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;configuring-the-nic-static-ip&quot;&gt;Configuring the NIC (static ip)&lt;/h3&gt;
+
+&lt;p&gt;For proper functionality its easier to configure the OpenBSD server to obtain a static ip instead of relying on the router’s dhcp service. To achieve this, I had to change two files: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/hostname.em0&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/mygate&lt;/code&gt;. The name of your interface could be different which would also result in another filename &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/hostname.your-interface-name&lt;/code&gt;. In a OpenBSD VM the interfaces are called vio0 for example. Resulting in the filename to be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;hostname.vio0&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/hostname.em0 ##&lt;/span&gt;
+inet static 192.168.1.250 255.255.255.0 &lt;span class=&quot;c&quot;&gt;# this will enable the static ip address 192.168.1.250 with a 255.255.255.0 netmask&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;After configuring the static ip I had to make sure that there is a file called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/mygate&lt;/code&gt; which wasn’t present because I installed my OpenBSD Box with dhcp enabled on my NIC.
+I created the file as root and wrote my routers ip as the single line in the file.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/mygate ## &lt;/span&gt;
+192.168.1.1 &lt;span class=&quot;c&quot;&gt;# one line that specifies the gateway (in my case 192.168.1.1)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;router-configuration&quot;&gt;Router configuration&lt;/h2&gt;
+&lt;p&gt;As every router and brand has its own way of configuration, I cannot tell you much about how you will be able to achieve this task. So I will roughly tell you how I did it (I am ommiting the router name and brand, as it would expose potential vulnerabilities that it could have that I don’t know of).
+For all configurations I had to open the web interface of my router at 192.168.1.1 and enter my password.&lt;/p&gt;
+
+&lt;h3 id=&quot;static-ip&quot;&gt;Static IP&lt;/h3&gt;
+&lt;p&gt;For the static ip I had to browse to a category called &lt;em&gt;LAN&lt;/em&gt; where I could assign static IP addresses to specific link layer adresses (MACs). So supposed that your NIC has the MAC 12:34:56:78:9A:BC you would tell your router to assign the desired static ip to that MAC. In my case I assigned the ip 192.168.1.250.&lt;/p&gt;
+
+&lt;h3 id=&quot;port-forwarding&quot;&gt;Port-forwarding&lt;/h3&gt;
+&lt;p&gt;Port-forwarding at my routers interface could be found at Homenet -&amp;gt; Port Forwarding. At this section I could create Port-forwarding rules for IPv4 and IPv6. I only created a rule for IPv4.
+I had to choose a service name: HTTP, the computer to forward the port to: 192.168.1.250, the transport protokoll: TCP and the Port range: 80-80.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Attention&lt;/em&gt;: When I created the rule I also had to enable a checkbox to activate that rule. Apart from the rules checkbox I also had to enable Port-forwarding as a whole in another dedicated checkbox on that site. This did cost me a little headache in the beginning because I didn’t see the specific rules checkbox when creating the port-forwarding rule and I wondered why the port-forwarding didn’t work.&lt;/p&gt;
+
+&lt;h2 id=&quot;domainname-and-ddns&quot;&gt;Domainname and DDNS&lt;/h2&gt;
+
+&lt;p&gt;In this section I will explain how I bought a domain name and enabled a DDNS client to update my ip changes to that domain name.&lt;/p&gt;
+
+&lt;h3 id=&quot;getting-a-domain&quot;&gt;Getting a domain&lt;/h3&gt;
+
+&lt;p&gt;There are a lot of domain registration services that you could use. But not all of them have a dynamic dns service included. I chose &lt;a href=&quot;https://www.strato.de&quot;&gt;Strato&lt;/a&gt; which is a german hosting service. I bought the domain-name hermes-technology.de.&lt;/p&gt;
+
+&lt;p&gt;You could also first try things out with a free service like &lt;a href=&quot;https://www.noip.com/&quot;&gt;noip&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;integrating-the-domain-in-the-server&quot;&gt;Integrating the domain in the server&lt;/h3&gt;
+
+&lt;p&gt;For proper configuration of the server and name resolving I configured my OpenBSD system to use the new domain name as the hostname.&lt;/p&gt;
+
+&lt;p&gt;For this to work properly, I had to edit the following files (the explanation for the configuration is commented inline):&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/myname ##&lt;/span&gt;
+hermes-technology.de &lt;span class=&quot;c&quot;&gt;# one line that specifies the symbolic name of the host machine &lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/resolv.conf ##&lt;/span&gt;
+nameserver 192.168.1.1 &lt;span class=&quot;c&quot;&gt;# the nameserver the resolver should query&lt;/span&gt;
+lookup file &lt;span class=&quot;nb&quot;&gt;bind&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# gethostbyname and gehostbyaddr should lookup in /etc/hosts first (file) and then ask the provided nameserver (bind)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/hosts ##&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# The first two lines are the defaults, the last line again specifies my domain name with my static ip address&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# These names will be used by the resolver that is configured to lookup in this file via /etc/resolv.conf&lt;/span&gt;
+127.0.0.1   localhost
+::1     localhost
+192.168.1.250  hermes-technology.de
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;making-the-public-ip-reachable-from-the-internet-ddns&quot;&gt;Making the public ip reachable from the internet (DDNS)&lt;/h4&gt;
+
+&lt;p&gt;My IPS, like most of the private Internet connections, frequently changes my public ip so I cannot assing a static ip to my domain name. A service to circumvent this problem is a so called dynamic DNS client, or short DDNS client on the server side. There are &lt;strong&gt;two possibilites&lt;/strong&gt; for this to work: Either my &lt;strong&gt;router itself has a DDNS client&lt;/strong&gt; that can resolve the host that I have bought my domainname from, or I will &lt;strong&gt;install a dedicated DDNS client&lt;/strong&gt; on my OpenBSD server.&lt;/p&gt;
+
+&lt;p&gt;As mentioned before, I bought my domain at the german service called Strato (www.strato.de). At this time my router had a few DDNS hosts that it could make a ddns update for, but Strato was not one of them. So I was left with the second choice: Installing a DDNS client on the OpenBSD server and configuring it to forward ip changes to the strato service.&lt;/p&gt;
+
+&lt;p&gt;I decided to install the ddns client called ddclient which is already available in the official ports of OpenBSD. So it was as easy as calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pkg_add ddclient&lt;/code&gt; for installing it. Thereafter I was left with the configuration file in /etc/ddclient/ddclient.conf. I appended some lines at the bottom of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ddclient.conf&lt;/code&gt; file, so that it would look like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/ddclient/ddclient.conf&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;## These lines were enabled by default&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;daemon&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;600              &lt;span class=&quot;c&quot;&gt;# check every 300 seconds&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;syslog&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;yes&lt;/span&gt;              &lt;span class=&quot;c&quot;&gt;# log update msgs to syslog&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;mail&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;root               &lt;span class=&quot;c&quot;&gt;# mail all msgs to root&lt;/span&gt;
+mail-failure&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;root           &lt;span class=&quot;c&quot;&gt;# mail failed update msgs to root&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;pid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/var/run/ddclient/ddclient.pid  &lt;span class=&quot;c&quot;&gt;# record PID in file.&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;ssl&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;yes&lt;/span&gt;                 &lt;span class=&quot;c&quot;&gt;# use ssl-support.  Works with&lt;/span&gt;
+                    &lt;span class=&quot;c&quot;&gt;# ssl-library&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;## ... There were some commented lines in between&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# This is the chunk I appended:&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;web
+&lt;span class=&quot;nv&quot;&gt;protocol&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;dyndns2
+&lt;span class=&quot;nv&quot;&gt;server&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;dyndns.strato.com
+&lt;span class=&quot;nv&quot;&gt;login&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;hermes-technology.de
+&lt;span class=&quot;nv&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;somepassword
+hermes-technology.de
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The configuration above has a few components:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;The first &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;use=web&lt;/code&gt; means, that the ddns server is reached through the internet.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;protocol=dyndns2&lt;/code&gt; specifies the ddns protocol that the destination server uses.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;login=hermes-technology.de&lt;/code&gt; is my login name for he server as provided by strato&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;password=somepassword&lt;/code&gt; is the specific password for the ddns service&lt;/li&gt;
+  &lt;li&gt;the last lines of the configuration specifies the domain names that should receive the DDNS updates I only update my main domain for DDNS as I have simple CNAME entries for all other subdomains that are thus reached through the same ip address as the main domain.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I also enabled the ddclient Daemon in the service manager:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas rcctl &lt;span class=&quot;nb&quot;&gt;enable &lt;/span&gt;ddclient
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;and started it:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas rcctl start ddclient
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;start-httpd-and-show-your-website&quot;&gt;Start httpd and show your website&lt;/h2&gt;
+
+&lt;p&gt;At last I wanted to show a simple static html “Hello World!” page on my domain. For this to work I had to configure the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;httpd&lt;/code&gt; daemon, which is a simple http server from OpenBSD based on Apache.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;## /etc/httpd.conf&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;ext_if&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;*&quot;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;## any interface is the external interface.. including my em0&lt;/span&gt;
+
+server &lt;span class=&quot;s2&quot;&gt;&quot;hermes-technology.de&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        
+        listen on &lt;span class=&quot;nv&quot;&gt;$ext_if&lt;/span&gt; port 80 &lt;span class=&quot;c&quot;&gt;## listen on all interfaces on port 80&lt;/span&gt;
+        
+        root &lt;span class=&quot;s2&quot;&gt;&quot;/htdocs/hermes-technology.de&quot;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;## make /var/www/htdocs/hermes-technology.de my root website directory&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+types &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        include &lt;span class=&quot;s2&quot;&gt;&quot;/usr/share/misc/mime.types&quot;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;After configurin the daemon I had to insert a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;index.html&lt;/code&gt; in my website’s directory:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;cd&lt;/span&gt; /var/www/htdocs/hermes-technology.de/
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;touch &lt;/span&gt;index.html
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hello World!&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; index.html
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;doas rcctl &lt;span class=&quot;nb&quot;&gt;enable &lt;/span&gt;httpd
+doas rcctl start httpd
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now my “Hello World!” page will be shown at hermes-technology.de.&lt;/p&gt;
+
+&lt;h2 id=&quot;outlook&quot;&gt;Outlook&lt;/h2&gt;
+
+&lt;p&gt;In the next post I will setup an OpenBSD virtual machine on the main server that receives the http requests. This includes configuring our own DNS server &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;unbound&lt;/code&gt; and setting up the firewall &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pf&lt;/code&gt; (see Figure 1).&lt;/p&gt;</content><author><name></name></author><summary type="html">I'm setting up a simple server in OpenBSD. This includes installing OpenBSD and configuring the network. Also I needed to enable port-forwarding on my home router and establish a dyndns service for updating my domain to point on the frequenctly changing IP.</summary></entry><entry><title type="html">My first blog post!</title><link href="http://localhost:4000/openbsd/server/2017/05/31/my-first-post.html" rel="alternate" type="text/html" title="My first blog post!" /><published>2017-05-31T00:30:00+02:00</published><updated>2017-05-31T00:30:00+02:00</updated><id>http://localhost:4000/openbsd/server/2017/05/31/my-first-post</id><content type="html" xml:base="http://localhost:4000/openbsd/server/2017/05/31/my-first-post.html">&lt;p&gt;Hello, I’m Jan - welcome to my blog and the first post. Today I managed to finish the rough infrastructure of my OpenBSD Server. I’m not sure how secure it is to expose the whole setup to the world (for intruders its naturally a good start if they exactly know how the server is built and where it might be possible to attack).&lt;/p&gt;
+
+&lt;p&gt;But anyway I decided to view this more as a learning experience. If there is somebody who can easily attack the infrastructure after exposing its internal setup then I obviously did not learn enough on the way.&lt;/p&gt;
+
+&lt;p&gt;Here is a quick sketch of the server infrastructure I came up with right now:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://localhost:4000/assets/server-sketch.svg.png&quot; alt=&quot;Server Infrastructure&quot; /&gt;&lt;/p&gt;</content><author><name></name></author><summary type="html">An introduction to my OpenBSD server setup.</summary></entry></feed>
