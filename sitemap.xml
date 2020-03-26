@@ -21,8 +21,12 @@
 <lastmod>2017-08-01T18:11:00+02:00</lastmod>
 </url>
 <url>
-<loc>http://blog.hermes-technology.de/openbsd/server/2020/03/23/use-local-images-in-minikube-3-methods.html</loc>
+<loc>http://blog.hermes-technology.de/minikube/kubernetes/podman/2020/03/23/use-local-images-in-minikube-3-methods.html</loc>
 <lastmod>2020-03-23T12:04:00+01:00</lastmod>
+</url>
+<url>
+<loc>http://blog.hermes-technology.de/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html</loc>
+<lastmod>2020-03-25T00:00:00+01:00</lastmod>
 </url>
 <url>
 <loc>http://blog.hermes-technology.de/projects/</loc>
