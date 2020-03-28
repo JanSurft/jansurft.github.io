@@ -232,7 +232,7 @@
 <h2 id="intro">Intro</h2>
 <p>Meanwhile I have update my OpenBSD Server to version 6.6, so some commands look different from before (<code>vmctl</code> uses a different ordering of arguments). All in all the whole <code>vmd</code> interactions feel a lot more stable and mature than before.</p>
 <h2 id="create-an-alpine-vm">Create an Alpine VM</h2>
-<h2 id="create-the-disk-and-start-the-installation">Create the disk and start the installation</h2>
+<h3 id="create-the-disk-and-start-the-installation">Create the disk and start the installation</h3>
 <p>The procedure is similar to what I described in my other post about creating virtual machines, though as mentioned before the <code>vmctl</code> has a slightly different syntax now.</p>
 <p>Note also that the last command in the code-block below uses the virtual network called <code>localnet</code> which I set up for the VM network in a <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html">previous post</a>.</p>
 <p>The <code>vmctl start</code> command in the end means the following:</p>
@@ -259,7 +259,7 @@
 
 <span class="co"># start the vm with boot rom</span>
 <span class="ex">doas</span> vmctl start -c -B cdrom -r alpine-virt-3.11.5-x86_64.iso -d alpine.drive -m 2G -n localnet alpine-vm</code></pre></div>
-<h2 id="installation-inside-the-alpine-vm">Installation inside the Alpine-VM</h2>
+<h3 id="installation-of-the-alpine-os-inside-the-alpine-vm">Installation of the alpine os inside the Alpine-VM</h3>
 <p>After the booting-process I logged into the VM as <code>root</code> user (without any password), and set up the network interfaces, for accessing online package resources during the installation.</p>
 <p>The setting of IP-Addresses, gateways, nameserver all is oriented at a <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html">previous post</a>, in which I set up the VM-network that I use on my server.</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">
@@ -419,12 +419,12 @@
 <span class="ex">/boot</span> is device /dev/vda1
 
 <span class="ex">Installation</span> is complete. Please reboot.</code></pre></div>
-<p>Now run <code>exit</code> and hit <code>~^D</code> to exit the virtual terminal.</p>
-<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">doas</span> vmctl stop alpine-vm</code></pre></div>
-<h2 id="create-separate-data-disk-and-modify-vm.conf-and-restart-vmd">Create separate data disk and Modify <em>vm.conf</em> and restart <em>vmd</em></h2>
-<p>data disk</p>
+<p>Running <code>poweroff</code> in the terminal should shutdown the vm and end the connection to the virtual terminal.</p>
+<p>As an alternative you can run <code>exit</code> and hit <code>~^D</code> to exit the virtual terminal, afterwards shutting down the vm via <code>doas vmctl stop alpine-vm</code>.</p>
+<h3 id="create-separate-data-disk-and-modify-vm.conf-and-restart-vmd">Create separate data disk and Modify <em>vm.conf</em> and restart <em>vmd</em></h3>
+<p>At first I created a 20 Gigabyte raw disk drive for system-independent data storage of the virtual machine.</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">doas</span> vmctl create -s 20G /mnt/data/vm-drives/alpine-data.img</code></pre></div>
-<p>Modify <code>vm.conf</code></p>
+<p>Afterwards I modified the <code>/etc/vm.conf</code> to include the new virtual machine and feed the correct disk data to the <code>alpine-vm</code>.</p>
 <pre class="hocon"><code>files=  /home/web-spider/vm/
 
 data=   /mnt/data/vm-drives/
@@ -446,14 +446,31 @@ vm alpine-vm {
 switch localnet {
     interface bridge0
 }</code></pre>
-<p>Restart <code>vmd</code></p>
+<p>Restart <code>vmd</code> for the changes to be effective.</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">doas</span> rcctl restart vmd</code></pre></div>
-<h2 id="inside-alpine-vm">Inside alpine vm</h2>
+<h3 id="kernel-booting-modifications">Kernel booting modifications</h3>
+<p>For the virtual machine to work more stable and quick with <code>vmd</code>, I did some recommended changes to the booting parameters.</p>
 <ol type="1">
 <li>Connect to alpine-vm via <code>doas vmctl console alpine-vm</code></li>
-<li>Update config file extlinux.conf</li>
+<li>Update config file <code>/boot/extlinux.conf</code></li>
 </ol>
-<p>!! Everything inside tags <code>&lt;...&gt;</code> must be substituted by your values !!</p>
+<div class="fromTheFuture">
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>Important...</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><pre><code>        !! Everything inside tags `&lt;...&gt;` must be substituted by your values !!</code></pre></td>
+</tr>
+</tbody>
+</table>
+</div>
 <div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="dt">SERIAL 0 115200</span>
 <span class="dt">DEFAULT &lt;dist&gt;</span>
 <span class="dt">PROMPT 0</span>

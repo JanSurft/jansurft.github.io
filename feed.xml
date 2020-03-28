@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://blog.hermes-technology.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.hermes-technology.de/" rel="alternate" type="text/html" /><updated>2020-03-28T20:41:18+01:00</updated><id>https://blog.hermes-technology.de/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://blog.hermes-technology.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.hermes-technology.de/" rel="alternate" type="text/html" /><updated>2020-03-28T22:49:00+01:00</updated><id>https://blog.hermes-technology.de/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
 </subtitle><entry><title type="html">Running Docker on an Alpine VM</title><link href="https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html" rel="alternate" type="text/html" title="Running Docker on an Alpine VM" /><published>2020-03-25T15:00:00+01:00</published><updated>2020-03-25T15:00:00+01:00</updated><id>https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm</id><content type="html" xml:base="https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html">&lt;div id=&quot;toc&quot;&gt;
 
 &lt;/div&gt;
 &lt;h2 id=&quot;intro&quot;&gt;Intro&lt;/h2&gt;
 &lt;p&gt;Meanwhile I have update my OpenBSD Server to version 6.6, so some commands look different from before (&lt;code&gt;vmctl&lt;/code&gt; uses a different ordering of arguments). All in all the whole &lt;code&gt;vmd&lt;/code&gt; interactions feel a lot more stable and mature than before.&lt;/p&gt;
 &lt;h2 id=&quot;create-an-alpine-vm&quot;&gt;Create an Alpine VM&lt;/h2&gt;
-&lt;h2 id=&quot;create-the-disk-and-start-the-installation&quot;&gt;Create the disk and start the installation&lt;/h2&gt;
+&lt;h3 id=&quot;create-the-disk-and-start-the-installation&quot;&gt;Create the disk and start the installation&lt;/h3&gt;
 &lt;p&gt;The procedure is similar to what I described in my other post about creating virtual machines, though as mentioned before the &lt;code&gt;vmctl&lt;/code&gt; has a slightly different syntax now.&lt;/p&gt;
 &lt;p&gt;Note also that the last command in the code-block below uses the virtual network called &lt;code&gt;localnet&lt;/code&gt; which I set up for the VM network in a &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html&quot;&gt;previous post&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;The &lt;code&gt;vmctl start&lt;/code&gt; command in the end means the following:&lt;/p&gt;
@@ -32,7 +32,7 @@
 
 &lt;span class=&quot;co&quot;&gt;# start the vm with boot rom&lt;/span&gt;
 &lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; vmctl start -c -B cdrom -r alpine-virt-3.11.5-x86_64.iso -d alpine.drive -m 2G -n localnet alpine-vm&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;installation-inside-the-alpine-vm&quot;&gt;Installation inside the Alpine-VM&lt;/h2&gt;
+&lt;h3 id=&quot;installation-of-the-alpine-os-inside-the-alpine-vm&quot;&gt;Installation of the alpine os inside the Alpine-VM&lt;/h3&gt;
 &lt;p&gt;After the booting-process I logged into the VM as &lt;code&gt;root&lt;/code&gt; user (without any password), and set up the network interfaces, for accessing online package resources during the installation.&lt;/p&gt;
 &lt;p&gt;The setting of IP-Addresses, gateways, nameserver all is oriented at a &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html&quot;&gt;previous post&lt;/a&gt;, in which I set up the VM-network that I use on my server.&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;
@@ -192,12 +192,12 @@
 &lt;span class=&quot;ex&quot;&gt;/boot&lt;/span&gt; is device /dev/vda1
 
 &lt;span class=&quot;ex&quot;&gt;Installation&lt;/span&gt; is complete. Please reboot.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Now run &lt;code&gt;exit&lt;/code&gt; and hit &lt;code&gt;~^D&lt;/code&gt; to exit the virtual terminal.&lt;/p&gt;
-&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; vmctl stop alpine-vm&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;create-separate-data-disk-and-modify-vm.conf-and-restart-vmd&quot;&gt;Create separate data disk and Modify &lt;em&gt;vm.conf&lt;/em&gt; and restart &lt;em&gt;vmd&lt;/em&gt;&lt;/h2&gt;
-&lt;p&gt;data disk&lt;/p&gt;
+&lt;p&gt;Running &lt;code&gt;poweroff&lt;/code&gt; in the terminal should shutdown the vm and end the connection to the virtual terminal.&lt;/p&gt;
+&lt;p&gt;As an alternative you can run &lt;code&gt;exit&lt;/code&gt; and hit &lt;code&gt;~^D&lt;/code&gt; to exit the virtual terminal, afterwards shutting down the vm via &lt;code&gt;doas vmctl stop alpine-vm&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&quot;create-separate-data-disk-and-modify-vm.conf-and-restart-vmd&quot;&gt;Create separate data disk and Modify &lt;em&gt;vm.conf&lt;/em&gt; and restart &lt;em&gt;vmd&lt;/em&gt;&lt;/h3&gt;
+&lt;p&gt;At first I created a 20 Gigabyte raw disk drive for system-independent data storage of the virtual machine.&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; vmctl create -s 20G /mnt/data/vm-drives/alpine-data.img&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Modify &lt;code&gt;vm.conf&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Afterwards I modified the &lt;code&gt;/etc/vm.conf&lt;/code&gt; to include the new virtual machine and feed the correct disk data to the &lt;code&gt;alpine-vm&lt;/code&gt;.&lt;/p&gt;
 &lt;pre class=&quot;hocon&quot;&gt;&lt;code&gt;files=  /home/web-spider/vm/
 
 data=   /mnt/data/vm-drives/
@@ -219,14 +219,31 @@ vm alpine-vm {
 switch localnet {
     interface bridge0
 }&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Restart &lt;code&gt;vmd&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Restart &lt;code&gt;vmd&lt;/code&gt; for the changes to be effective.&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; rcctl restart vmd&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;inside-alpine-vm&quot;&gt;Inside alpine vm&lt;/h2&gt;
+&lt;h3 id=&quot;kernel-booting-modifications&quot;&gt;Kernel booting modifications&lt;/h3&gt;
+&lt;p&gt;For the virtual machine to work more stable and quick with &lt;code&gt;vmd&lt;/code&gt;, I did some recommended changes to the booting parameters.&lt;/p&gt;
 &lt;ol type=&quot;1&quot;&gt;
 &lt;li&gt;Connect to alpine-vm via &lt;code&gt;doas vmctl console alpine-vm&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;Update config file extlinux.conf&lt;/li&gt;
+&lt;li&gt;Update config file &lt;code&gt;/boot/extlinux.conf&lt;/code&gt;&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;!! Everything inside tags &lt;code&gt;&amp;lt;...&amp;gt;&lt;/code&gt; must be substituted by your values !!&lt;/p&gt;
+&lt;div class=&quot;fromTheFuture&quot;&gt;
+&lt;table&gt;
+&lt;colgroup&gt;
+&lt;col style=&quot;width: 100%&quot; /&gt;
+&lt;/colgroup&gt;
+&lt;thead&gt;
+&lt;tr class=&quot;header&quot;&gt;
+&lt;th&gt;&lt;strong&gt;Important...&lt;/strong&gt;&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr class=&quot;odd&quot;&gt;
+&lt;td&gt;&lt;pre&gt;&lt;code&gt;        !! Everything inside tags `&amp;lt;...&amp;gt;` must be substituted by your values !!&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode ini&quot;&gt;&lt;code class=&quot;sourceCode ini&quot;&gt;&lt;span class=&quot;dt&quot;&gt;SERIAL 0 115200&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;DEFAULT &amp;lt;dist&amp;gt;&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;PROMPT 0&lt;/span&gt;
