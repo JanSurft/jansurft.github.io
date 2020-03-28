@@ -1,10 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://blog.hermes-technology.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.hermes-technology.de/" rel="alternate" type="text/html" /><updated>2020-03-28T18:38:33+01:00</updated><id>https://blog.hermes-technology.de/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://blog.hermes-technology.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.hermes-technology.de/" rel="alternate" type="text/html" /><updated>2020-03-28T20:41:18+01:00</updated><id>https://blog.hermes-technology.de/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
 </subtitle><entry><title type="html">Running Docker on an Alpine VM</title><link href="https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html" rel="alternate" type="text/html" title="Running Docker on an Alpine VM" /><published>2020-03-25T15:00:00+01:00</published><updated>2020-03-25T15:00:00+01:00</updated><id>https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm</id><content type="html" xml:base="https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html">&lt;div id=&quot;toc&quot;&gt;
 
 &lt;/div&gt;
 &lt;h2 id=&quot;intro&quot;&gt;Intro&lt;/h2&gt;
-&lt;p&gt;Meanwhile I have update my OpenBSD Server to 6.6 so some commands look different from before (&lt;code&gt;vmctl&lt;/code&gt; uses a different ordering of arguments).&lt;/p&gt;
-&lt;h2 id=&quot;create-boot-drive&quot;&gt;Create boot drive&lt;/h2&gt;
+&lt;p&gt;Meanwhile I have update my OpenBSD Server to version 6.6, so some commands look different from before (&lt;code&gt;vmctl&lt;/code&gt; uses a different ordering of arguments). All in all the whole &lt;code&gt;vmd&lt;/code&gt; interactions feel a lot more stable and mature than before.&lt;/p&gt;
+&lt;h2 id=&quot;create-an-alpine-vm&quot;&gt;Create an Alpine VM&lt;/h2&gt;
+&lt;h2 id=&quot;create-the-disk-and-start-the-installation&quot;&gt;Create the disk and start the installation&lt;/h2&gt;
+&lt;p&gt;The procedure is similar to what I described in my other post about creating virtual machines, though as mentioned before the &lt;code&gt;vmctl&lt;/code&gt; has a slightly different syntax now.&lt;/p&gt;
+&lt;p&gt;Note also that the last command in the code-block below uses the virtual network called &lt;code&gt;localnet&lt;/code&gt; which I set up for the VM network in a &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html&quot;&gt;previous post&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;vmctl start&lt;/code&gt; command in the end means the following:&lt;/p&gt;
+&lt;ol type=&quot;1&quot;&gt;
+&lt;li&gt;&lt;code&gt;-c&lt;/code&gt;: Connect to a virtual console after starting&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-B cdrom&lt;/code&gt;: Boot from a supplied cdrom iso if exists&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-r alpine-virt-3.11.5-x86_64.iso&lt;/code&gt;: Use the supplied iso as cdrom data&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-d alpine.drive&lt;/code&gt;: Use the raw disk drive we created&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-m 2G&lt;/code&gt;: With 2 Gigabyte of virtual ram&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-n localnet&lt;/code&gt;: Connecting to the virtual bridge network called &lt;code&gt;localnet&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;alpine-vm&lt;/code&gt;: Name the VM &amp;quot;alpine-vm&amp;quot;&lt;/li&gt;
+&lt;/ol&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;
 &lt;span class=&quot;co&quot;&gt;# replace v3.11 with the latest version of alpine&lt;/span&gt;
 
@@ -12,18 +25,19 @@
 &lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; ftp https://nl.alpinelinux.org/alpine/v3.11/releases/x86_64/alpine-virt-3.11.5-x86_64.iso.sha256
 
 &lt;span class=&quot;co&quot;&gt;# verify correct signature&lt;/span&gt;
-&lt;span class=&quot;ex&quot;&gt;sha256&lt;/span&gt; alpine-virt-3.11.5-x86_64.iso
-&lt;span class=&quot;co&quot;&gt;# compare to&lt;/span&gt;
-&lt;span class=&quot;fu&quot;&gt;cat&lt;/span&gt; alpine-virt-3.11.5-x86_64.iso.sha256
+&lt;span class=&quot;fu&quot;&gt;diff&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;lt;(&lt;/span&gt;&lt;span class=&quot;ex&quot;&gt;sha256&lt;/span&gt; -q alpine-virt-3.11.5-x86_64.iso&lt;span class=&quot;op&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;lt;(&lt;/span&gt;&lt;span class=&quot;fu&quot;&gt;cat&lt;/span&gt; alpine-virt-3.11.5-x86_64.iso.sha256&lt;span class=&quot;op&quot;&gt;)&lt;/span&gt;
 
 &lt;span class=&quot;co&quot;&gt;# create the raw disk file for alpine to install on&lt;/span&gt;
 &lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; vmctl create -s 8G alpine.drive
 
 &lt;span class=&quot;co&quot;&gt;# start the vm with boot rom&lt;/span&gt;
 &lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; vmctl start -c -B cdrom -r alpine-virt-3.11.5-x86_64.iso -d alpine.drive -m 2G -n localnet alpine-vm&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;run-setup-interfaces&quot;&gt;Run &lt;code&gt;setup-interfaces&lt;/code&gt;&lt;/h2&gt;
+&lt;h2 id=&quot;installation-inside-the-alpine-vm&quot;&gt;Installation inside the Alpine-VM&lt;/h2&gt;
+&lt;p&gt;After the booting-process I logged into the VM as &lt;code&gt;root&lt;/code&gt; user (without any password), and set up the network interfaces, for accessing online package resources during the installation.&lt;/p&gt;
+&lt;p&gt;The setting of IP-Addresses, gateways, nameserver all is oriented at a &lt;a href=&quot;/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html&quot;&gt;previous post&lt;/a&gt;, in which I set up the VM-network that I use on my server.&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;
-&lt;span class=&quot;ex&quot;&gt;setup-interfaces&lt;/span&gt;
+&lt;span class=&quot;co&quot;&gt;# set up the network interfaces itself&lt;/span&gt;
+&lt;span class=&quot;ex&quot;&gt;localhost&lt;/span&gt;:~# setup-interfaces
 
 &lt;span class=&quot;ex&quot;&gt;Available&lt;/span&gt; interfaces are: eth0.
 &lt;span class=&quot;ex&quot;&gt;Enter&lt;/span&gt; &lt;span class=&quot;st&quot;&gt;&amp;#39;?&amp;#39;&lt;/span&gt; for help on bridges, bonding and vlans.
@@ -42,11 +56,13 @@
   &lt;span class=&quot;va&quot;&gt;gateway=&lt;/span&gt;192.168.30.1
 
 &lt;span class=&quot;ex&quot;&gt;Do&lt;/span&gt; you want to do any manual network configuration? [no]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;run-setup-dns&quot;&gt;Run &lt;code&gt;setup-dns&lt;/code&gt;&lt;/h2&gt;
-&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;DNS&lt;/span&gt; domain name? (e.g &lt;span class=&quot;st&quot;&gt;&amp;#39;bar.com&amp;#39;&lt;/span&gt;) [] &lt;span class=&quot;ex&quot;&gt;hermes-technology.de&lt;/span&gt;
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;co&quot;&gt;# set up the nameserver&lt;/span&gt;
+&lt;span class=&quot;ex&quot;&gt;localhost&lt;/span&gt;:~# setup-dns
+
+&lt;span class=&quot;ex&quot;&gt;DNS&lt;/span&gt; domain name? (e.g &lt;span class=&quot;st&quot;&gt;&amp;#39;bar.com&amp;#39;&lt;/span&gt;) [] &lt;span class=&quot;ex&quot;&gt;hermes-technology.de&lt;/span&gt;
 
 &lt;span class=&quot;ex&quot;&gt;DNS&lt;/span&gt; nameserver(s)&lt;span class=&quot;ex&quot;&gt;?&lt;/span&gt; [] 192.168.30.1&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;run&lt;/p&gt;
+&lt;p&gt;After I was making sure that my networking was working (via a &lt;code&gt;ping google.com&lt;/code&gt;), I just started the installation choosing the commands shown below.&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;
 &lt;span class=&quot;ex&quot;&gt;localhost&lt;/span&gt;:~# setup-alpine
 &lt;span class=&quot;ex&quot;&gt;Available&lt;/span&gt; keyboard layouts:
@@ -178,7 +194,7 @@
 &lt;span class=&quot;ex&quot;&gt;Installation&lt;/span&gt; is complete. Please reboot.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Now run &lt;code&gt;exit&lt;/code&gt; and hit &lt;code&gt;~^D&lt;/code&gt; to exit the virtual terminal.&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; vmctl stop alpine-vm&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;create-separate-data-disk-and-modify-vm.conf-and-restart-vmd&quot;&gt;Create separate data disk and Modify &lt;code&gt;vm.conf&lt;/code&gt; and restart &lt;code&gt;vmd&lt;/code&gt;&lt;/h2&gt;
+&lt;h2 id=&quot;create-separate-data-disk-and-modify-vm.conf-and-restart-vmd&quot;&gt;Create separate data disk and Modify &lt;em&gt;vm.conf&lt;/em&gt; and restart &lt;em&gt;vmd&lt;/em&gt;&lt;/h2&gt;
 &lt;p&gt;data disk&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; vmctl create -s 20G /mnt/data/vm-drives/alpine-data.img&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Modify &lt;code&gt;vm.conf&lt;/code&gt;&lt;/p&gt;

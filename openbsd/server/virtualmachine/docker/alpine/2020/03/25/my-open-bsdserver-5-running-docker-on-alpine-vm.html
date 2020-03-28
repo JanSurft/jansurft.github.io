@@ -230,8 +230,21 @@
 
 </div>
 <h2 id="intro">Intro</h2>
-<p>Meanwhile I have update my OpenBSD Server to 6.6 so some commands look different from before (<code>vmctl</code> uses a different ordering of arguments).</p>
-<h2 id="create-boot-drive">Create boot drive</h2>
+<p>Meanwhile I have update my OpenBSD Server to version 6.6, so some commands look different from before (<code>vmctl</code> uses a different ordering of arguments). All in all the whole <code>vmd</code> interactions feel a lot more stable and mature than before.</p>
+<h2 id="create-an-alpine-vm">Create an Alpine VM</h2>
+<h2 id="create-the-disk-and-start-the-installation">Create the disk and start the installation</h2>
+<p>The procedure is similar to what I described in my other post about creating virtual machines, though as mentioned before the <code>vmctl</code> has a slightly different syntax now.</p>
+<p>Note also that the last command in the code-block below uses the virtual network called <code>localnet</code> which I set up for the VM network in a <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html">previous post</a>.</p>
+<p>The <code>vmctl start</code> command in the end means the following:</p>
+<ol type="1">
+<li><code>-c</code>: Connect to a virtual console after starting</li>
+<li><code>-B cdrom</code>: Boot from a supplied cdrom iso if exists</li>
+<li><code>-r alpine-virt-3.11.5-x86_64.iso</code>: Use the supplied iso as cdrom data</li>
+<li><code>-d alpine.drive</code>: Use the raw disk drive we created</li>
+<li><code>-m 2G</code>: With 2 Gigabyte of virtual ram</li>
+<li><code>-n localnet</code>: Connecting to the virtual bridge network called <code>localnet</code></li>
+<li><code>alpine-vm</code>: Name the VM &quot;alpine-vm&quot;</li>
+</ol>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">
 <span class="co"># replace v3.11 with the latest version of alpine</span>
 
@@ -239,18 +252,19 @@
 <span class="ex">doas</span> ftp https://nl.alpinelinux.org/alpine/v3.11/releases/x86_64/alpine-virt-3.11.5-x86_64.iso.sha256
 
 <span class="co"># verify correct signature</span>
-<span class="ex">sha256</span> alpine-virt-3.11.5-x86_64.iso
-<span class="co"># compare to</span>
-<span class="fu">cat</span> alpine-virt-3.11.5-x86_64.iso.sha256
+<span class="fu">diff</span> <span class="op">&lt;(</span><span class="ex">sha256</span> -q alpine-virt-3.11.5-x86_64.iso<span class="op">)</span> <span class="op">&lt;(</span><span class="fu">cat</span> alpine-virt-3.11.5-x86_64.iso.sha256<span class="op">)</span>
 
 <span class="co"># create the raw disk file for alpine to install on</span>
 <span class="ex">doas</span> vmctl create -s 8G alpine.drive
 
 <span class="co"># start the vm with boot rom</span>
 <span class="ex">doas</span> vmctl start -c -B cdrom -r alpine-virt-3.11.5-x86_64.iso -d alpine.drive -m 2G -n localnet alpine-vm</code></pre></div>
-<h2 id="run-setup-interfaces">Run <code>setup-interfaces</code></h2>
+<h2 id="installation-inside-the-alpine-vm">Installation inside the Alpine-VM</h2>
+<p>After the booting-process I logged into the VM as <code>root</code> user (without any password), and set up the network interfaces, for accessing online package resources during the installation.</p>
+<p>The setting of IP-Addresses, gateways, nameserver all is oriented at a <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html">previous post</a>, in which I set up the VM-network that I use on my server.</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">
-<span class="ex">setup-interfaces</span>
+<span class="co"># set up the network interfaces itself</span>
+<span class="ex">localhost</span>:~# setup-interfaces
 
 <span class="ex">Available</span> interfaces are: eth0.
 <span class="ex">Enter</span> <span class="st">&#39;?&#39;</span> for help on bridges, bonding and vlans.
@@ -269,11 +283,13 @@
   <span class="va">gateway=</span>192.168.30.1
 
 <span class="ex">Do</span> you want to do any manual network configuration? [no]</code></pre></div>
-<h2 id="run-setup-dns">Run <code>setup-dns</code></h2>
-<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">DNS</span> domain name? (e.g <span class="st">&#39;bar.com&#39;</span>) [] <span class="ex">hermes-technology.de</span>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># set up the nameserver</span>
+<span class="ex">localhost</span>:~# setup-dns
+
+<span class="ex">DNS</span> domain name? (e.g <span class="st">&#39;bar.com&#39;</span>) [] <span class="ex">hermes-technology.de</span>
 
 <span class="ex">DNS</span> nameserver(s)<span class="ex">?</span> [] 192.168.30.1</code></pre></div>
-<p>run</p>
+<p>After I was making sure that my networking was working (via a <code>ping google.com</code>), I just started the installation choosing the commands shown below.</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">
 <span class="ex">localhost</span>:~# setup-alpine
 <span class="ex">Available</span> keyboard layouts:
@@ -405,7 +421,7 @@
 <span class="ex">Installation</span> is complete. Please reboot.</code></pre></div>
 <p>Now run <code>exit</code> and hit <code>~^D</code> to exit the virtual terminal.</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">doas</span> vmctl stop alpine-vm</code></pre></div>
-<h2 id="create-separate-data-disk-and-modify-vm.conf-and-restart-vmd">Create separate data disk and Modify <code>vm.conf</code> and restart <code>vmd</code></h2>
+<h2 id="create-separate-data-disk-and-modify-vm.conf-and-restart-vmd">Create separate data disk and Modify <em>vm.conf</em> and restart <em>vmd</em></h2>
 <p>data disk</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">doas</span> vmctl create -s 20G /mnt/data/vm-drives/alpine-data.img</code></pre></div>
 <p>Modify <code>vm.conf</code></p>
