@@ -448,12 +448,12 @@ switch localnet {
 <span class="dt">  APPEND root</span><span class="ot">=</span><span class="st">UUID=&lt;uuid&gt; modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,</span><span class="dv">115200</span></code></pre></div>
 <p>And example might look like this:</p>
 <div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="dt">SERIAL 0 115200</span>
-<span class="dt">DEFAULT hardened</span>
+<span class="dt">DEFAULT virt</span>
 <span class="dt">PROMPT 0</span>
-<span class="dt">LABEL hardened</span>
-<span class="dt">  MENU LABEL Linux hardened</span>
-<span class="dt">  LINUX vmlinuz-hardened</span>
-<span class="dt">  INITRD initramfs-hardened</span>
+<span class="dt">LABEL virt</span>
+<span class="dt">  MENU LABEL Linux virt</span>
+<span class="dt">  LINUX vmlinuz-virt</span>
+<span class="dt">  INITRD initramfs-virt</span>
 <span class="dt">  APPEND root</span><span class="ot">=</span><span class="st">UUID=001c5e4f-af70-4f6f-bdbc-ceff9d23c6f3 modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,</span><span class="dv">115200</span></code></pre></div>
 <ol start="3" type="1">
 <li><p>Reboot and reconnect to vm</p></li>
