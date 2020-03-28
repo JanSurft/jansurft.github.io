@@ -10,7 +10,7 @@
   <meta name="description" content="I wanted my server&#39;s ssh access to be much more secure than default. This includes choosing strong algorithms for authentication, integrity and encription as...">
 
   <link rel="stylesheet" href="/assets/main.css">
-  <link rel="canonical" href="http://blog.hermes-technology.de/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html">
+  <link rel="canonical" href="https://blog.hermes-technology.de/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html">
   <link rel="alternate" type="application/rss+xml" title="Hermes Technology Blog" href="/feed.xml">
   
   
@@ -104,7 +104,7 @@
 	  </div>
 
 	  <div class="project-banner">
-		  <img class="project-img" src="http://blog.hermes-technology.de/assets/my-openbsd-server-project-banner.svg.png" alt="My OpenBSD server"/>
+		  <img class="project-img" src="https://blog.hermes-technology.de/assets/my-openbsd-server-project-banner.svg.png" alt="My OpenBSD server"/>
 		  <!--h1 class="project-title" itemprop="project banner">My OpenBSD server</h1-->
 
 	  <!--
@@ -228,11 +228,11 @@
 
 
   <div class="post-content" itemprop="articleBody">
-    <p>UPDATE: I upgraded the whole ssh setup on client and server to be much more secure, thanks to PengouinBSD’s comment!</p>
+    <p>UPDATE: I upgraded the whole ssh setup on client and server to be much more secure, thanks to PengouinBSD's comment!</p>
 <p>Hello again,</p>
-<p>as I wrote in my <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#outlook">last post</a> I want to take care a bit about ssh connection and its security. So today’s task will be:</p>
+<p>as I wrote in my <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#outlook">last post</a> I want to take care a bit about ssh connection and its security. So today's task will be:</p>
 <ul>
-<li>Create an ssh-key on my workstation and add the public key to the server’s authorized keys</li>
+<li>Create an ssh-key on my workstation and add the public key to the server's authorized keys</li>
 <li>Configure the ssh daemon (sshd) on the server (no root permit, no password permit, only public key)</li>
 <li>Do the same for each virtual machine</li>
 <li>Enable a <code>fail2ban</code> like functionality via <code>pf</code>, banning specific IP addresses that tried to connect too often or too fast</li>
@@ -261,34 +261,38 @@
 <p>For setting up all the ssh configurations I disconnected my server and my workstation from the internet (not from the LAN) so there could not be any interceptions to the internal traffic when I setup the public key authentication.</p>
 <h3 id="create-an-ssh-key">Create an ssh-key</h3>
 <p>On the workstation I wanted to be able to reach my server from, I created an ssh-key:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">ssh-keygen</span> -t ed25519 -f ~/.ssh/id_ed25519 -o -a 64</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">ssh-keygen</span> -t ed25519 -f ~/.ssh/id_ed25519 -o -a 64</code></pre></div>
 <h3 id="copy-the-key-to-the-server">Copy the key to the server</h3>
 <p>Copying the key to the server for public key authentication of ssh sessions is easy.</p>
 <p>Whenever I have the chance to use <code>ssh-copy-id</code>, I use <a href="/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#with-ssh-copy-id">that method</a>. In other cases I do a variation of the <a href="/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#without-ssh-copy-id">second method</a>.</p>
 <h4 id="with-ssh-copy-id">With ssh-copy-id</h4>
 <p>After generating the key I needed to transfer it to my server.</p>
-<p>There are several ways to do this. The first thing to try out is using <code>ssh-copy-id</code> like so (the server’s IP is at 192.168.1.250 with the user <code>jan-server</code>):</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="ex">ssh-copy-id</span> -i ~/.ssh/id_ed25519 -p 22 jan-server@192.168.1.250</span></code></pre></div>
+<p>There are several ways to do this. The first thing to try out is using <code>ssh-copy-id</code> like so (the server's IP is at 192.168.1.250 with the user <code>jan-server</code>):</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">ssh-copy-id</span> -i ~/.ssh/id_ed25519 -p 22 jan-server@192.168.1.250</code></pre></div>
 <h4 id="without-ssh-copy-id">Without ssh-copy-id</h4>
-<p>There were cases when I couldn’t use <code>ssh-copy-id</code>, what I usually did then was:</p>
+<p>There were cases when I couldn't use <code>ssh-copy-id</code>, what I usually did then was:</p>
 <ul>
 <li>Opening an ssh session in a terminal to the ssh public key receiver via <code>ssh -p 22 myuser@192.168.1.250</code></li>
 <li>Open another terminal and copy the content of the public key file to the clipboard (<strong>Do not</strong> use the file <code>~/.ssh/id_ed25519</code> that is the private key file which should never leave your workstation but the file <code>~/.ssh/id_ed25519.pub</code> the public key file belonging to that key)</li>
 </ul>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">cat</span> ~/.ssh/id_ed25519.pub <span class="kw">|</span> <span class="ex">xclip</span> -selection clipboard</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">cat</span> ~/.ssh/id_ed25519.pub <span class="kw">|</span> <span class="ex">xclip</span> -selection clipboard</code></pre></div>
 <p>This last command needs <code>xclip</code> on your workstation (on a Debian like system install it via <code>sudo apt install xclip</code>).</p>
 <p>Append the clipboard content to the authorized-keys file like so (pasting in the terminal <code>Ctrl-Shift-V</code> or with an editor of your choice like vim):</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a><span class="bu">echo</span> <span class="st">&quot;ssh-ed25519 AAF23409SLFKJE02394FFTtlksdfowie3422DKdcweoDweoDFJwode99973fdOdjf9WT jan@jans-workstation&quot;</span> <span class="op">&gt;&gt;</span> ~/.ssh/authorized_keys</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="bu">echo</span> <span class="st">&quot;ssh-ed25519 AAF23409SLFKJE02394FFTtlksdfowie3422DKdcweoDweoDFJwode99973fdOdjf9WT jan@jans-workstation&quot;</span> <span class="op">&gt;&gt;</span> ~/.ssh/authorized_keys</code></pre></div>
 <h3 id="changing-ssh-configuration-on-client-and-server">Changing ssh configuration on client and server</h3>
-<p>There are a lot of things to consider when changing the clients’ and servers’ configuration for OpenSSH.</p>
+<p>There are a lot of things to consider when changing the clients' and servers' configuration for OpenSSH.</p>
 <p>For most of the configurations (nearly all), I followed <a href="https://stribika.github.io/2015/01/04/secure-secure-shell.html">the documentation by stribika</a>. Thank you for this great setup!</p>
 <p>Additionally I also set up a two factor authentication with the Google Authenticator App on my android device.</p>
 <h3 id="setting-up-client-and-server">Setting up (client and server)</h3>
 <p>Stribika proposed to change or generate the <code>/etc/ssh/moduli</code> file. Because mine already existed, I modified my <code>/etc/ssh/moduli</code> file like so (<a href="https://stribika.github.io/2015/01/04/secure-secure-shell.html">explained here</a>):</p>
-<div class="sourceCode" id="cb5" data-startFrom="1"><pre class="sourceCode numberSource bash numberLines"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">awk</span> <span class="st">&#39;$5 &gt; 2000&#39;</span> /etc/ssh/moduli <span class="op">&gt;</span> <span class="st">&quot;</span><span class="va">${HOME}</span><span class="st">/moduli&quot;</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">wc</span> -l <span class="st">&quot;</span><span class="va">${HOME}</span><span class="st">/moduli&quot;</span> <span class="co"># make sure there is something left</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="fu">sudo</span> cp /etc/ssh/moduli /etc/ssh/moduli.bak</span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="fu">sudo</span> mv <span class="st">&quot;</span><span class="va">${HOME}</span><span class="st">/moduli&quot;</span> /etc/ssh/moduli</span></code></pre></div>
+<div class="sourceCode" startFrom="1"><table class="sourceCode bash numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+</pre></td><td class="sourceCode"><pre><code class="sourceCode bash"><span class="fu">awk</span> <span class="st">&#39;$5 &gt; 2000&#39;</span> /etc/ssh/moduli <span class="op">&gt;</span> <span class="st">&quot;</span><span class="va">${HOME}</span><span class="st">/moduli&quot;</span>
+<span class="fu">wc</span> -l <span class="st">&quot;</span><span class="va">${HOME}</span><span class="st">/moduli&quot;</span> <span class="co"># make sure there is something left</span>
+<span class="fu">sudo</span> cp /etc/ssh/moduli /etc/ssh/moduli.bak
+<span class="fu">sudo</span> mv <span class="st">&quot;</span><span class="va">${HOME}</span><span class="st">/moduli&quot;</span> /etc/ssh/moduli</code></pre></td></tr></table></div>
 <ul>
 <li><em>Line 1</em>: Get all lines from <code>/etc/ssh/moduli</code> that have a fifth column of a value greater than 2000 and copy them into a file in <code>~/moduli</code>.</li>
 <li><em>Line 2</em>: Make sure that there are still lines left in the generated file.</li>
@@ -299,125 +303,199 @@
 <h4 id="the-sshd_config">The sshd_config</h4>
 <p>To alter the configuration of my ssh daemon on the server, I had to manipulate the file <code>/etc/ssh/sshd_config</code> as shown below.</p>
 <p>The code snippet below shows the configuration that I definitely set for my sshd service (comments point out the different functionalities):</p>
-<div class="sourceCode" id="cb6" data-startFrom="1"><pre class="sourceCode numberSource ini numberLines"><code class="sourceCode ini"><span id="cb6-1"><a href="#cb6-1"></a><span class="co"># /etc/ssh/sshd_config</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="co"># Make sure that ssh protocol version 2 is used only!</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="dt">Protocol 2</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a></span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="co"># Set the hostkeys that will be used for server authentication at the client</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="co"># first preferred one:</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a><span class="dt">HostKey /etc/ssh/ssh_host_ed25519_key</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a><span class="co"># fallback:</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a><span class="dt">HostKey /etc/ssh/ssh_host_rsa_key</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a></span>
-<span id="cb6-12"><a href="#cb6-12"></a><span class="co"># Chose a port that is not &quot;standard&quot; so default port scanning on low ports fail</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a><span class="co"># The port number can be a 16bit Integer. So the maximum is 65535</span></span>
-<span id="cb6-14"><a href="#cb6-14"></a><span class="dt">Port 13423</span></span>
-<span id="cb6-15"><a href="#cb6-15"></a></span>
-<span id="cb6-16"><a href="#cb6-16"></a><span class="co"># Tell sshd which key exchange algorithms it is allowed to use. The resource by stribka at</span></span>
-<span id="cb6-17"><a href="#cb6-17"></a><span class="co"># https://stribika.github.io/2015/01/04/secure-secure-shell.html is explaining why these two (curve25519 and diffie-hellman sha256)</span></span>
-<span id="cb6-18"><a href="#cb6-18"></a><span class="co"># are the only chosen ones</span></span>
-<span id="cb6-19"><a href="#cb6-19"></a><span class="dt">KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256</span></span>
-<span id="cb6-20"><a href="#cb6-20"></a></span>
-<span id="cb6-21"><a href="#cb6-21"></a><span class="co"># Only allow strong symmetric cyphers (see stribka&#39;s resource for detailed information)</span></span>
-<span id="cb6-22"><a href="#cb6-22"></a><span class="dt">Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr</span></span>
-<span id="cb6-23"><a href="#cb6-23"></a></span>
-<span id="cb6-24"><a href="#cb6-24"></a><span class="co"># Only allow strong hmacs for message integrity (see stribka&#39;s resource for detailed information)</span></span>
-<span id="cb6-25"><a href="#cb6-25"></a><span class="dt">MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,hmac-ripemd160,umac-128@openssh.com</span></span>
-<span id="cb6-26"><a href="#cb6-26"></a></span>
-<span id="cb6-27"><a href="#cb6-27"></a><span class="co"># I do not want to permit root login for ssh in general</span></span>
-<span id="cb6-28"><a href="#cb6-28"></a><span class="co"># If I would like to do that later I would choose to do it in a Match rule for specific addresses for example</span></span>
-<span id="cb6-29"><a href="#cb6-29"></a><span class="dt">PermitRootLogin no</span></span>
-<span id="cb6-30"><a href="#cb6-30"></a></span>
-<span id="cb6-31"><a href="#cb6-31"></a><span class="co"># The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2</span></span>
-<span id="cb6-32"><a href="#cb6-32"></a><span class="co"># but this is overridden so installations will only check .ssh/authorized_keys</span></span>
-<span id="cb6-33"><a href="#cb6-33"></a><span class="dt">AuthorizedKeysFile      .ssh/authorized_keys</span></span>
-<span id="cb6-34"><a href="#cb6-34"></a></span>
-<span id="cb6-35"><a href="#cb6-35"></a><span class="co"># Generally I want to disalow any kind of access</span></span>
-<span id="cb6-36"><a href="#cb6-36"></a><span class="co"># and handle it in user or address specific match rules</span></span>
-<span id="cb6-37"><a href="#cb6-37"></a><span class="co"># so disable pubkey authentication at first</span></span>
-<span id="cb6-38"><a href="#cb6-38"></a><span class="dt">PubkeyAuthentication no</span></span>
-<span id="cb6-39"><a href="#cb6-39"></a></span>
-<span id="cb6-40"><a href="#cb6-40"></a><span class="co"># To disable tunneled clear text passwords:</span></span>
-<span id="cb6-41"><a href="#cb6-41"></a><span class="dt">PasswordAuthentication no</span></span>
-<span id="cb6-42"><a href="#cb6-42"></a></span>
-<span id="cb6-43"><a href="#cb6-43"></a><span class="co"># allow challenge reponse authentication for 2 factor authentication with google authenticator</span></span>
-<span id="cb6-44"><a href="#cb6-44"></a><span class="dt">ChallengeResponseAuthentication yes</span></span>
-<span id="cb6-45"><a href="#cb6-45"></a></span>
-<span id="cb6-46"><a href="#cb6-46"></a><span class="co"># We do not want to permit empty passwords in any case:</span></span>
-<span id="cb6-47"><a href="#cb6-47"></a><span class="dt">PermitEmptyPasswords no</span></span>
-<span id="cb6-48"><a href="#cb6-48"></a></span>
-<span id="cb6-49"><a href="#cb6-49"></a><span class="co"># Generally disallow tcp forwarding</span></span>
-<span id="cb6-50"><a href="#cb6-50"></a><span class="dt">AllowTcpForwarding no</span></span>
-<span id="cb6-51"><a href="#cb6-51"></a></span>
-<span id="cb6-52"><a href="#cb6-52"></a><span class="co"># override default of no subsystems</span></span>
-<span id="cb6-53"><a href="#cb6-53"></a><span class="dt">Subsystem       sftp    /usr/libexec/sftp-server</span></span>
-<span id="cb6-54"><a href="#cb6-54"></a></span>
-<span id="cb6-55"><a href="#cb6-55"></a><span class="co"># only allow ssh sessions for members of the ssh-user group</span></span>
-<span id="cb6-56"><a href="#cb6-56"></a><span class="dt">AllowGroups ssh-user</span></span>
-<span id="cb6-57"><a href="#cb6-57"></a></span>
-<span id="cb6-58"><a href="#cb6-58"></a><span class="co"># then when its a member of the group ssh-user (like my user jan-server will be) to be logged in, do some specific actions:</span></span>
-<span id="cb6-59"><a href="#cb6-59"></a><span class="dt">Match Group ssh-user </span></span>
-<span id="cb6-60"><a href="#cb6-60"></a><span class="dt">        </span></span>
-<span id="cb6-61"><a href="#cb6-61"></a><span class="dt">        </span><span class="co"># Allow tcp forwarding for the user jan-server (for enabling ssh session forwarding to my virtual machines)</span></span>
-<span id="cb6-62"><a href="#cb6-62"></a><span class="dt">        AllowTcpForwarding yes</span></span>
-<span id="cb6-63"><a href="#cb6-63"></a><span class="dt">        </span></span>
-<span id="cb6-64"><a href="#cb6-64"></a><span class="dt">        </span><span class="co"># Allow password authentication (for allowing google authenticator OTP&#39;s) </span></span>
-<span id="cb6-65"><a href="#cb6-65"></a><span class="dt">        PasswordAuthentication yes</span></span>
-<span id="cb6-66"><a href="#cb6-66"></a><span class="dt">        </span></span>
-<span id="cb6-67"><a href="#cb6-67"></a><span class="dt">        </span><span class="co"># And allow pubkey authentication, so my generated pubkey can be used</span></span>
-<span id="cb6-68"><a href="#cb6-68"></a><span class="dt">        PubkeyAuthentication yes</span></span>
-<span id="cb6-69"><a href="#cb6-69"></a></span>
-<span id="cb6-70"><a href="#cb6-70"></a><span class="dt">        </span><span class="co"># Prompt for authentication in the following order: first ask for authenticaton of the public key then prompt for the two factor key on google-authenticator</span></span>
-<span id="cb6-71"><a href="#cb6-71"></a><span class="dt">        AuthenticationMethods publickey,password</span></span></code></pre></div>
+<div class="sourceCode" startFrom="1"><table class="sourceCode ini numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+</pre></td><td class="sourceCode"><pre><code class="sourceCode ini"><span class="co"># /etc/ssh/sshd_config</span>
+
+<span class="co"># Make sure that ssh protocol version 2 is used only!</span>
+<span class="dt">Protocol 2</span>
+
+<span class="co"># Set the hostkeys that will be used for server authentication at the client</span>
+<span class="co"># first preferred one:</span>
+<span class="dt">HostKey /etc/ssh/ssh_host_ed25519_key</span>
+<span class="co"># fallback:</span>
+<span class="dt">HostKey /etc/ssh/ssh_host_rsa_key</span>
+
+<span class="co"># Chose a port that is not &quot;standard&quot; so default port scanning on low ports fail</span>
+<span class="co"># The port number can be a 16bit Integer. So the maximum is 65535</span>
+<span class="dt">Port 13423</span>
+
+<span class="co"># Tell sshd which key exchange algorithms it is allowed to use. The resource by stribka at</span>
+<span class="co"># https://stribika.github.io/2015/01/04/secure-secure-shell.html is explaining why these two (curve25519 and diffie-hellman sha256)</span>
+<span class="co"># are the only chosen ones</span>
+<span class="dt">KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256</span>
+
+<span class="co"># Only allow strong symmetric cyphers (see stribka&#39;s resource for detailed information)</span>
+<span class="dt">Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr</span>
+
+<span class="co"># Only allow strong hmacs for message integrity (see stribka&#39;s resource for detailed information)</span>
+<span class="dt">MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,hmac-ripemd160,umac-128@openssh.com</span>
+
+<span class="co"># I do not want to permit root login for ssh in general</span>
+<span class="co"># If I would like to do that later I would choose to do it in a Match rule for specific addresses for example</span>
+<span class="dt">PermitRootLogin no</span>
+
+<span class="co"># The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2</span>
+<span class="co"># but this is overridden so installations will only check .ssh/authorized_keys</span>
+<span class="dt">AuthorizedKeysFile      .ssh/authorized_keys</span>
+
+<span class="co"># Generally I want to disalow any kind of access</span>
+<span class="co"># and handle it in user or address specific match rules</span>
+<span class="co"># so disable pubkey authentication at first</span>
+<span class="dt">PubkeyAuthentication no</span>
+
+<span class="co"># To disable tunneled clear text passwords:</span>
+<span class="dt">PasswordAuthentication no</span>
+
+<span class="co"># allow challenge reponse authentication for 2 factor authentication with google authenticator</span>
+<span class="dt">ChallengeResponseAuthentication yes</span>
+
+<span class="co"># We do not want to permit empty passwords in any case:</span>
+<span class="dt">PermitEmptyPasswords no</span>
+
+<span class="co"># Generally disallow tcp forwarding</span>
+<span class="dt">AllowTcpForwarding no</span>
+
+<span class="co"># override default of no subsystems</span>
+<span class="dt">Subsystem       sftp    /usr/libexec/sftp-server</span>
+
+<span class="co"># only allow ssh sessions for members of the ssh-user group</span>
+<span class="dt">AllowGroups ssh-user</span>
+
+<span class="co"># then when its a member of the group ssh-user (like my user jan-server will be) to be logged in, do some specific actions:</span>
+<span class="dt">Match Group ssh-user </span>
+<span class="dt">        </span>
+<span class="dt">        </span><span class="co"># Allow tcp forwarding for the user jan-server (for enabling ssh session forwarding to my virtual machines)</span>
+<span class="dt">        AllowTcpForwarding yes</span>
+<span class="dt">        </span>
+<span class="dt">        </span><span class="co"># Allow password authentication (for allowing google authenticator OTP&#39;s) </span>
+<span class="dt">        PasswordAuthentication yes</span>
+<span class="dt">        </span>
+<span class="dt">        </span><span class="co"># And allow pubkey authentication, so my generated pubkey can be used</span>
+<span class="dt">        PubkeyAuthentication yes</span>
+
+<span class="dt">        </span><span class="co"># Prompt for authentication in the following order: first ask for authenticaton of the public key then prompt for the two factor key on google-authenticator</span>
+<span class="dt">        AuthenticationMethods publickey,password</span></code></pre></td></tr></table></div>
 <h4 id="new-user-groups-and-keyfiles">New user groups and keyfiles</h4>
 <p>After changing the configuration file I created a group called <code>ssh-user</code> on the server:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1"></a><span class="ex">doas</span> groupadd ssh-user</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> groupadd ssh-user</code></pre></div>
 <p>and added my local user <code>jan-server</code> to that group:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1"></a><span class="ex">doas</span> user mod -G ssh-user jan-server</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> user mod -G ssh-user jan-server</code></pre></div>
 <p>Then I deleted all host key files on the server and generated new ones:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1"></a><span class="bu">cd</span> /etc/ssh</span>
-<span id="cb9-2"><a href="#cb9-2"></a></span>
-<span id="cb9-3"><a href="#cb9-3"></a><span class="co"># delete the host key files existing:</span></span>
-<span id="cb9-4"><a href="#cb9-4"></a><span class="fu">rm</span> ssh_host_*key*</span>
-<span id="cb9-5"><a href="#cb9-5"></a></span>
-<span id="cb9-6"><a href="#cb9-6"></a><span class="co"># generate new ones that we use (only those two mentioned in the sshd_config)</span></span>
-<span id="cb9-7"><a href="#cb9-7"></a><span class="fu">ssh-keygen</span> -t ed25519 -f ssh_host_ed25519_key -N <span class="st">&quot;&quot;</span> <span class="op">&lt;</span> /dev/null</span>
-<span id="cb9-8"><a href="#cb9-8"></a><span class="fu">ssh-keygen</span> -t rsa -b 4096 -f ssh_host_rsa_key -N <span class="st">&quot;&quot;</span> <span class="op">&lt;</span> /dev/null</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="bu">cd</span> /etc/ssh
+
+<span class="co"># delete the host key files existing:</span>
+<span class="fu">rm</span> ssh_host_*key*
+
+<span class="co"># generate new ones that we use (only those two mentioned in the sshd_config)</span>
+<span class="fu">ssh-keygen</span> -t ed25519 -f ssh_host_ed25519_key -N <span class="st">&quot;&quot;</span> <span class="op">&lt;</span> /dev/null
+<span class="fu">ssh-keygen</span> -t rsa -b 4096 -f ssh_host_rsa_key -N <span class="st">&quot;&quot;</span> <span class="op">&lt;</span> /dev/null</code></pre></div>
 <h4 id="google-authenticator-integration">Google authenticator integration</h4>
 <p>As an additional instance of security I wanted to integrate Google Authenticator as a second factor. I chose that because I already had it installed on my Android device. It is also <a href="https://github.com/google/google-authenticator">open source</a>.</p>
 <p>Google Authenticator supports the <a href="https://de.wikipedia.org/wiki/HMAC-based_One-time_Password_Algorithmus">HMAC-based One-time Password Algorithm</a> (OATH-HOTP) as of <a href="https://tools.ietf.org/html/rfc4226">RFC 4226</a>.</p>
 <h5 id="pre-requisites">Pre-Requisites</h5>
 <p>I installed the following packages:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1"></a><span class="ex">doas</span> pkg_add login_oath</span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="ex">doas</span> pkg_add node</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> pkg_add login_oath
+<span class="ex">doas</span> pkg_add node</code></pre></div>
 <ul>
 <li><p><code>login_oath</code> is used for using the time based one time password compatible to the google authenticator.</p></li>
 <li><p><code>node</code> is used for installing a convenient wrapper for setting up the key-file for the one-time-password service.</p></li>
 </ul>
 <p>Afterwards I installed a tool for creating the keyfile for the Google Authenticator, I read the sourcecode beforehand to be sure its safe.:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1"></a><span class="ex">npm</span> install  -g https://github.com/WIZARDISHUNGRY/totp-util</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">npm</span> install  -g https://github.com/WIZARDISHUNGRY/totp-util</code></pre></div>
 <h5 id="set-up-the-key-file-and-give-it-to-my-android-device">Set up the key file and give it to my Android device</h5>
 <p>On the server I then set up the keyfile by running <code>totp-util</code> as the user I would like to be able to log in with (in my case that user was <code>jan-server</code>).</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1"></a><span class="ex">totp-util</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">totp-util</span></code></pre></div>
 <p>I scanned the QR-code appearing on the console with my google authenticator app on my android phone.</p>
 <h5 id="configure-login.conf-for-the-otp-integration">Configure login.conf for the OTP integration</h5>
 <p>I added a new login class to <code>/etc/login.conf</code> at the end of the file (appending) like so:</p>
-<div class="sourceCode" id="cb13" data-startFrom="1"><pre class="sourceCode numberSource bash numberLines"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1"></a><span class="ex">totppw</span>:\</span>
-<span id="cb13-2"><a href="#cb13-2"></a>    :auth-ssh=-totp,skey:\</span>
-<span id="cb13-3"><a href="#cb13-3"></a>    :tc=default:</span></code></pre></div>
+<div class="sourceCode" startFrom="1"><table class="sourceCode bash numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+</pre></td><td class="sourceCode"><pre><code class="sourceCode bash"><span class="ex">totppw</span>:\
+    :auth-ssh=-totp,skey:\
+    :tc=default:</code></pre></td></tr></table></div>
 <ul>
 <li><em>Line 1</em>: the name of the new login class.</li>
 <li><em>Line 2</em>: specifying the allowed login methods for ssh authentication to -totp (timebased one-time-password) and skey.</li>
 <li><em>Line 3</em>: use the defaults for everything else.</li>
 </ul>
 <p>I then recompiled the <code>login.conf</code> file:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1"></a><span class="ex">doas</span> cap_mkd /etc/login.conf</span></code></pre></div>
-<p>And changed my user’s login class to the newly generated <code>totppw</code>:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1"></a><span class="ex">doas</span> usermod -L totppw jan-server</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> cap_mkd /etc/login.conf</code></pre></div>
+<p>And changed my user's login class to the newly generated <code>totppw</code>:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> usermod -L totppw jan-server</code></pre></div>
 <h4 id="at-the-end-of-the-server-configuration">At the end of the server configuration</h4>
 <p>I needed to reload the configuration file for the service:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1"></a><span class="ex">doas</span> rcctl reload sshd</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> rcctl reload sshd</code></pre></div>
 <h3 id="ssh-configuration-client">SSH configuration (client)</h3>
 <p>The configuration for the client is done in <code>/etc/ssh/ssh_config</code> and corresponds with the configurations that I chose for the server:</p>
 <pre><code>Host *
@@ -433,42 +511,42 @@
     Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
     
     MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-ripemd160-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,hmac-ripemd160,umac-128@openssh.com</code></pre>
-<h3 id="thats-what-i-can-do-now">That’s what I can do now</h3>
+<h3 id="thats-what-i-can-do-now">That's what I can do now</h3>
 <p>Now when I do <code>ssh -p 13423 -i ~/.ssh/id_ed25519 jan-server@192.168.1.250</code>, I am able to connect to my server via public key authentication and google authenticator like so (password are of course not shown in terminal input but I included them for better presentation):</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">ssh</span> -p 13423 -i ~/.ssh/id_ed25519 jan-server@192.168.1.250</span>
-<span id="cb18-2"><a href="#cb18-2"></a><span class="ex">Enter</span> passphrase for key <span class="st">&#39;.ssh/id_ed25519&#39;</span>: mypubkeypasswd</span>
-<span id="cb18-3"><a href="#cb18-3"></a><span class="ex">Authenticated</span> with partial success.</span>
-<span id="cb18-4"><a href="#cb18-4"></a><span class="ex">user@192.168.1.13</span><span class="st">&#39;s password: 123456</span></span></code></pre></div>
-<p>For my convenience I also added these lines into my workstation’s <code>~/.ssh/config</code> file:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1"></a><span class="co"># ~/.ssh/config</span></span>
-<span id="cb19-2"><a href="#cb19-2"></a></span>
-<span id="cb19-3"><a href="#cb19-3"></a><span class="ex">Host</span> server-local</span>
-<span id="cb19-4"><a href="#cb19-4"></a>    <span class="ex">Port</span> 13423</span>
-<span id="cb19-5"><a href="#cb19-5"></a>    <span class="ex">HostName</span> 192.168.1.250</span>
-<span id="cb19-6"><a href="#cb19-6"></a>    <span class="ex">User</span> jan-server</span>
-<span id="cb19-7"><a href="#cb19-7"></a>    <span class="ex">IdentityFile</span> ~/.ssh/id_ed25519</span>
-<span id="cb19-8"><a href="#cb19-8"></a></span>
-<span id="cb19-9"><a href="#cb19-9"></a><span class="ex">Host</span> server-remote</span>
-<span id="cb19-10"><a href="#cb19-10"></a>    <span class="ex">Port</span> 13423</span>
-<span id="cb19-11"><a href="#cb19-11"></a>    <span class="ex">HostName</span> hermes-technology.de</span>
-<span id="cb19-12"><a href="#cb19-12"></a>    <span class="ex">User</span> jan-server</span>
-<span id="cb19-13"><a href="#cb19-13"></a>    <span class="ex">IdentityFile</span> ~/.ssh/id_ed25519</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">ssh</span> -p 13423 -i ~/.ssh/id_ed25519 jan-server@192.168.1.250
+<span class="ex">Enter</span> passphrase for key <span class="st">&#39;.ssh/id_ed25519&#39;</span>: mypubkeypasswd
+<span class="ex">Authenticated</span> with partial success.
+<span class="ex">user@192.168.1.13</span><span class="st">&#39;s password: 123456</span></code></pre></div>
+<p>For my convenience I also added these lines into my workstation's <code>~/.ssh/config</code> file:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># ~/.ssh/config</span>
+
+<span class="ex">Host</span> server-local
+    <span class="ex">Port</span> 13423
+    <span class="ex">HostName</span> 192.168.1.250
+    <span class="ex">User</span> jan-server
+    <span class="ex">IdentityFile</span> ~/.ssh/id_ed25519
+
+<span class="ex">Host</span> server-remote
+    <span class="ex">Port</span> 13423
+    <span class="ex">HostName</span> hermes-technology.de
+    <span class="ex">User</span> jan-server
+    <span class="ex">IdentityFile</span> ~/.ssh/id_ed25519</code></pre></div>
 <p>Now I can just do <code>ssh server-local</code> when I want to connect to my server from the local network or <code>ssh server-remote</code> when I want to connect from a remote place.</p>
 <h3 id="configure-the-ssh-daemon-sshd-on-the-virtual-machines">Configure the ssh daemon (sshd) on the virtual machines</h3>
 <p>As you may have noticed from my last posts: I have a server infrastructure, where different subdomain requests are forwarded to virtual machines on the main server.</p>
-<p>So for being able to do the same convenient ssh maintenance on my virtual machines, without ssh’ing to my main server and then connecting to the VMs via <code>vmctl</code> <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#installing-and-configuring-nginx-on-the-host-vm">as explained here</a>, I have to configure the ssh daemons on the virtual machines as well and enable the public key authentication.</p>
+<p>So for being able to do the same convenient ssh maintenance on my virtual machines, without ssh'ing to my main server and then connecting to the VMs via <code>vmctl</code> <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#installing-and-configuring-nginx-on-the-host-vm">as explained here</a>, I have to configure the ssh daemons on the virtual machines as well and enable the public key authentication.</p>
 <p>I will explain how I did it on the <code>host-vm</code>.</p>
 <p>Because OpenBSD on the <code>host-vm</code> was installed as explained in the <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#guided-installation-of-openbsd-for-the-host-vm">installation guide in my last post</a>, the ssh daemon is enabled by default and root login is prohibited.</p>
 <p>On my workstation I logged in via ssh into my main server:</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">ssh</span> server-local</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">ssh</span> server-local</code></pre></div>
 <p>Then I logged into the <code>foo-vm</code>:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1"></a><span class="ex">vmctl</span> console host-vm</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">vmctl</span> console host-vm</code></pre></div>
 <p>To copy the ssh public key <a href="/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#create-an-ssh-key">that I generated on my workstation</a>, I chose the manual method without <code>ssh-copy-id</code> as explained <a href="/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#without-ssh-copy-id">here</a>.</p>
 <p>Thereafter I first configured the <code>/etc/ssh/moduli</code> file as explained <a href="/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#setting-up-client-and-server">here</a>.</p>
 <p>Then I followed <a href="/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#ssh-configuration-server">the sshd configrations on the server</a> and did some modifications in the <code>sshd_config</code> file:</p>
 <ul>
 <li>On <code>line 14</code> I changed the ssh Port to 22 (Nobody can access the ssh service on my virtual machine without reaching my main server, so if the attacker is already on the main server nothing matters anymore :-D).</li>
-<li>I also <strong>deleted</strong> <code>line 62</code> about allowing tcp forwarding (<code>AllowTcpForwarding yes</code>), because it is unlikely that I will have nested VMs in the near future so I don’t need to forward ssh requests to somebody else.</li>
+<li>I also <strong>deleted</strong> <code>line 62</code> about allowing tcp forwarding (<code>AllowTcpForwarding yes</code>), because it is unlikely that I will have nested VMs in the near future so I don't need to forward ssh requests to somebody else.</li>
 </ul>
 <p>Of course I also changed the user <code>jan-server</code> to <code>host</code> as this is my username on the <code>host-vm</code>.</p>
 <p>I followed the creation of the user group <code>ssh-user</code> for allowing ssh login and integrated the Google Authenticator setup thereafter.</p>
@@ -476,26 +554,39 @@
 <p>Now also the <code>host-vm</code> accepts the same ssh-key that was generated for the main server.</p>
 <h3 id="access-virtual-machines-via-ssh-on-my-workstation">Access virtual machines via ssh on my workstation</h3>
 <p>For an easy connection to my virtual machines from my workstation I added some lines to my <code>~/.ssh/config</code> file (for each vm):</p>
-<div class="sourceCode" id="cb22" data-startFrom="1"><pre class="sourceCode numberSource bash numberLines"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1"></a><span class="co"># This block is for ssh connection when I&#39;m in the local network:</span></span>
-<span id="cb22-2"><a href="#cb22-2"></a><span class="ex">Host</span> host-vm-local</span>
-<span id="cb22-3"><a href="#cb22-3"></a>    <span class="ex">Port</span> 22</span>
-<span id="cb22-4"><a href="#cb22-4"></a>    <span class="ex">HostName</span> 192.168.30.2</span>
-<span id="cb22-5"><a href="#cb22-5"></a>    <span class="ex">ProxyCommand</span> ssh -A jan-server@192.168.1.250 -p 13423 -W %h:%p</span>
-<span id="cb22-6"><a href="#cb22-6"></a>    <span class="ex">User</span> host </span>
-<span id="cb22-7"><a href="#cb22-7"></a></span>
-<span id="cb22-8"><a href="#cb22-8"></a><span class="co"># This block is for ssh connection when I&#39;m at a remote place:</span></span>
-<span id="cb22-9"><a href="#cb22-9"></a><span class="ex">Host</span> host-vm-remote</span>
-<span id="cb22-10"><a href="#cb22-10"></a>    <span class="ex">Port</span> 22</span>
-<span id="cb22-11"><a href="#cb22-11"></a>    <span class="ex">HostName</span> 192.168.30.2</span>
-<span id="cb22-12"><a href="#cb22-12"></a>    <span class="ex">ProxyCommand</span> ssh -A jan-server@hermes-technology.de -p 13423 -W %h:%p</span>
-<span id="cb22-13"><a href="#cb22-13"></a>    <span class="ex">User</span> host </span></code></pre></div>
+<div class="sourceCode" startFrom="1"><table class="sourceCode bash numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="sourceCode"><pre><code class="sourceCode bash"><span class="co"># This block is for ssh connection when I&#39;m in the local network:</span>
+<span class="ex">Host</span> host-vm-local
+    <span class="ex">Port</span> 22
+    <span class="ex">HostName</span> 192.168.30.2
+    <span class="ex">ProxyCommand</span> ssh -A jan-server@192.168.1.250 -p 13423 -W %h:%p
+    <span class="ex">User</span> host 
+
+<span class="co"># This block is for ssh connection when I&#39;m at a remote place:</span>
+<span class="ex">Host</span> host-vm-remote
+    <span class="ex">Port</span> 22
+    <span class="ex">HostName</span> 192.168.30.2
+    <span class="ex">ProxyCommand</span> ssh -A jan-server@hermes-technology.de -p 13423 -W %h:%p
+    <span class="ex">User</span> host </code></pre></td></tr></table></div>
 <ul>
 <li><em>Line 3</em>: The ssh port on the virtual machine.</li>
 <li><em>Line 4</em>: The local IP of the virtual machine as reachable from the main server.</li>
 <li><em>Line 5</em>: Enables the forwarding of the ssh request to the virtual machine.</li>
 <li><em>Line 6</em>: The user on the virtual machine.</li>
 </ul>
-<p>Logging in to virtual machines from my workstation now can easily be done by executing e.g. <code>ssh host-vm-local</code>.</p>
+<p>Logging in to virtual machines from my workstation now can easily be done by executing e.g. <code>ssh host-vm-local</code>.</p>
 <h2 id="make-pf-ban-ips-that-do-malicious-ssh-attempts">Make PF ban IPs that do malicious ssh attempts</h2>
 <p>I wanted to block certain IPs from reconnecting via ssh if there were too many attempts with wrong credentials or if those attempts have a frequency that exceeded a certain limitation.</p>
 <p>So in short I wanted to react to brute force attackers like <code>fail2ban</code> does.</p>
@@ -503,14 +594,14 @@
 <h3 id="enable-blocking-of-bruteforcers">Enable blocking of bruteforcers</h3>
 <p>For this task I had to modify the <code>/etc/pf.conf</code> and reload the firewall configuration.</p>
 <p>I added a table that is persistent and can be updated with new members:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1"></a><span class="ex">table</span> <span class="op">&lt;</span>bruters<span class="op">&gt;</span> persist</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">table</span> <span class="op">&lt;</span>bruters<span class="op">&gt;</span> persist</code></pre></div>
 <p>I told <code>pf</code> that IPs listed in this list should be blocked by the server (this rule should be inserted early in your ruleset):</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1"></a><span class="ex">block</span> quick from <span class="op">&lt;</span>bruters<span class="op">&gt;</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">block</span> quick from <span class="op">&lt;</span>bruters<span class="op">&gt;</span></code></pre></div>
 <p>Then I created a rule to update the brutes table for general connection attempts (not only ssh):</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1"></a><span class="ex">pass</span> inet proto tcp from any to <span class="va">$localnet</span> port <span class="va">$services</span> \</span>
-<span id="cb25-2"><a href="#cb25-2"></a>    flags S/SA keep state \</span>
-<span id="cb25-3"><a href="#cb25-3"></a>    (max-src-conn 80, max-src-conn-rate 15/5, \</span>
-<span id="cb25-4"><a href="#cb25-4"></a>    overload <span class="op">&lt;</span>bruters<span class="op">&gt;</span> flush global)</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">pass</span> inet proto tcp from any to <span class="va">$localnet</span> port <span class="va">$services</span> \
+    flags S/SA keep state \
+    (max-src-conn 80, max-src-conn-rate 15/5, \
+    overload <span class="op">&lt;</span>bruters<span class="op">&gt;</span> flush global)</code></pre></div>
 <ul>
 <li><code>max-src-conn 80</code> limits the maximum number of simultaneous TCP connections on my tcp services to 80.</li>
 <li><code>max-src-conn-rate 15/5</code> limits the rate of new connections over a time interval to 15 connections in 5 seconds.</li>
@@ -523,28 +614,28 @@
         overload &lt;bruters&gt; flush global)</code></pre>
 <h3 id="enable-expiration-of-bruterforcers-over-time">Enable expiration of bruterforcers over time</h3>
 <p>For expiring IP addresses in the <code>bruters</code> table I added a cron job into the crontab file:</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1"></a><span class="co"># /etc/crontab</span></span>
-<span id="cb27-2"><a href="#cb27-2"></a><span class="ex">@daily</span> root pfctl -t brutes -T expire 86400</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># /etc/crontab</span>
+<span class="ex">@daily</span> root pfctl -t brutes -T expire 86400</code></pre></div>
 <p>This cronjob will be executed daily and remove entries in the <code>bruters</code> table that exceed the duration of presence for 86400 seconds (24 hours).</p>
 <h2 id="conclusion">Conclusion</h2>
-<p>Now I’m able to login to ssh sessions from my workstation, only using my ed25519 key and the Google Authenticator prompt as second factor.</p>
+<p>Now I'm able to login to ssh sessions from my workstation, only using my ed25519 key and the Google Authenticator prompt as second factor.</p>
 <p>SSH sessions can be opened as easy as:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1"></a><span class="co"># for server from local network</span></span>
-<span id="cb28-2"><a href="#cb28-2"></a><span class="fu">ssh</span> server-local</span>
-<span id="cb28-3"><a href="#cb28-3"></a></span>
-<span id="cb28-4"><a href="#cb28-4"></a><span class="co"># for server from remote network</span></span>
-<span id="cb28-5"><a href="#cb28-5"></a><span class="fu">ssh</span> server-remote</span>
-<span id="cb28-6"><a href="#cb28-6"></a></span>
-<span id="cb28-7"><a href="#cb28-7"></a><span class="co"># for vms from local network (exchange &lt;vm&gt; with e.g. host-vm as showed above)</span></span>
-<span id="cb28-8"><a href="#cb28-8"></a><span class="fu">ssh</span> <span class="op">&lt;</span>vm<span class="op">&gt;</span>-local</span>
-<span id="cb28-9"><a href="#cb28-9"></a></span>
-<span id="cb28-10"><a href="#cb28-10"></a><span class="co"># for vms from remote network</span></span>
-<span id="cb28-11"><a href="#cb28-11"></a><span class="fu">ssh</span> <span class="op">&lt;</span>vm<span class="op">&gt;</span>-remote</span></code></pre></div>
-<p>“Insecure” plain password connections are not supported anymore.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># for server from local network</span>
+<span class="fu">ssh</span> server-local
+
+<span class="co"># for server from remote network</span>
+<span class="fu">ssh</span> server-remote
+
+<span class="co"># for vms from local network (exchange &lt;vm&gt; with e.g. host-vm as showed above)</span>
+<span class="fu">ssh</span> <span class="op">&lt;</span>vm<span class="op">&gt;</span>-local
+
+<span class="co"># for vms from remote network</span>
+<span class="fu">ssh</span> <span class="op">&lt;</span>vm<span class="op">&gt;</span>-remote</code></pre></div>
+<p>&quot;Insecure&quot; plain password connections are not supported anymore.</p>
 <p>Failing ssh connections will remembered and according IPs will be banned for the specified amounts of time as presented in the last section of this post.</p>
 <h2 id="outlook">Outlook</h2>
-<p>I’m not sure yet what I will be writing about in my next post. Maybe I will find out how to use <code>relayd</code> as a substitute of <code>nginx</code> <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#installing-and-configuring-nginx-on-the-host-vm">for redirecting subdomain requests</a> to my local VM IPs, then I will probably be writing about that (there is also <a href="https://serverfault.com/questions/856807/openbsd-how-to-use-relayd-and-httpd-for-redirecting-subdomain-requests">an open question</a> for this on stack exchange). Maybe I will also write about a backup utility that I set up as a cronjob for doing frequent backups of my main-server and the VMs.</p>
-<p>But until then I’m happy about comments and any suggestions that you have for me, “see” you soon.</p>
+<p>I'm not sure yet what I will be writing about in my next post. Maybe I will find out how to use <code>relayd</code> as a substitute of <code>nginx</code> <a href="/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html#installing-and-configuring-nginx-on-the-host-vm">for redirecting subdomain requests</a> to my local VM IPs, then I will probably be writing about that (there is also <a href="https://serverfault.com/questions/856807/openbsd-how-to-use-relayd-and-httpd-for-redirecting-subdomain-requests">an open question</a> for this on stack exchange). Maybe I will also write about a backup utility that I set up as a cronjob for doing frequent backups of my main-server and the VMs.</p>
+<p>But until then I'm happy about comments and any suggestions that you have for me, &quot;see&quot; you soon.</p>
 <p>Jan</p>
 
   </div>

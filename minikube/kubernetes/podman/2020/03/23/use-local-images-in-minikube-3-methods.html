@@ -10,7 +10,7 @@
   <meta name="description" content="Playing around with minikube and podman">
 
   <link rel="stylesheet" href="/assets/main.css">
-  <link rel="canonical" href="http://blog.hermes-technology.de/minikube/kubernetes/podman/2020/03/23/use-local-images-in-minikube-3-methods.html">
+  <link rel="canonical" href="https://blog.hermes-technology.de/minikube/kubernetes/podman/2020/03/23/use-local-images-in-minikube-3-methods.html">
   <link rel="alternate" type="application/rss+xml" title="Hermes Technology Blog" href="/feed.xml">
   
   
@@ -104,7 +104,7 @@
 	  </div>
 
 	  <div class="project-banner">
-		  <img class="project-img" src="http://blog.hermes-technology.de/assets/" alt="Kubernetes"/>
+		  <img class="project-img" src="https://blog.hermes-technology.de/assets/" alt="Kubernetes"/>
 		  <!--h1 class="project-title" itemprop="project banner">Kubernetes</h1-->
 
 	  <!--
@@ -224,100 +224,100 @@
 
 
   <div class="post-content" itemprop="articleBody">
-    <p>I wanted to to do some kubernetes tests locally with minikube and found out that I couldn’t use locally built images. There where three methods depending on the use case that worked for me:</p>
+    <p>I wanted to to do some kubernetes tests locally with minikube and found out that I couldn't use locally built images. There where three methods depending on the use case that worked for me:</p>
 <ol type="1">
 <li>Use podman env</li>
 <li>Use a local registry on host and pull from that in minikube</li>
 <li>Use a registry in minikube and push into that from the host</li>
 </ol>
 <h1 id="method-1---use-podman-env">Method 1 - Use podman env</h1>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a></span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="co"># start minikube with podman</span></span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="ex">minikube</span> start --container-runtime=crio-o</span>
-<span id="cb1-4"><a href="#cb1-4"></a></span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="co"># wait until minikube is ready</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="bu">eval</span> <span class="va">$(</span><span class="ex">minikube</span> podman-env<span class="va">)</span></span>
-<span id="cb1-7"><a href="#cb1-7"></a></span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="co"># use podman-remote in the same terminal using a local Dockerfile on host, e.g.:</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a><span class="ex">podman-remote</span> build -f Dockerfile example:latest .</span>
-<span id="cb1-10"><a href="#cb1-10"></a></span>
-<span id="cb1-11"><a href="#cb1-11"></a><span class="co"># images are then accessible in minikube podman via:</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a><span class="ex">podman-remote</span> run --image localhost/example:latest</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">
+<span class="co"># start minikube with podman</span>
+<span class="ex">minikube</span> start --container-runtime=crio-o
+
+<span class="co"># wait until minikube is ready</span>
+<span class="bu">eval</span> <span class="va">$(</span><span class="ex">minikube</span> podman-env<span class="va">)</span>
+
+<span class="co"># use podman-remote in the same terminal using a local Dockerfile on host, e.g.:</span>
+<span class="ex">podman-remote</span> build -f Dockerfile example:latest .
+
+<span class="co"># images are then accessible in minikube podman via:</span>
+<span class="ex">podman-remote</span> run --image localhost/example:latest</code></pre></div>
 <h1 id="method-2---use-a-local-registry-on-the-host">Method 2 - Use a local registry on the host</h1>
 <p>Make name resolution of <code>registry.local</code> point to your host</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># update /etc/hosts</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="bu">printf</span> <span class="st">&#39;%s\t%s\n&#39;</span> <span class="st">&#39;127.0.0.1&#39;</span> <span class="st">&#39;registry.local&#39;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee -a /etc/hosts</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># update /etc/hosts</span>
+<span class="bu">printf</span> <span class="st">&#39;%s\t%s\n&#39;</span> <span class="st">&#39;127.0.0.1&#39;</span> <span class="st">&#39;registry.local&#39;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee -a /etc/hosts</code></pre></div>
 <p>Change the insecure registries entry in your container config file:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb3-1"><a href="#cb3-1"></a><span class="co"># /etc/containers/registries.conf</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a></span>
-<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">[registries.search]</span></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;docker.io&#39;, &#39;registry.fedoraproject.org&#39;, &#39;quay.io&#39;, &#39;registry.access.redhat.com&#39;, &#39;registry.centos.org&#39;]</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a></span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="co"># If you need to access insecure registries, add the registry&#39;s fully-qualified name.</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a><span class="co"># An insecure registry is one that does not have a valid SSL certificate or only does HTTP.</span></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="kw">[registries.insecure]</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a><span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;registry.local&#39;]</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a></span>
-<span id="cb3-11"><a href="#cb3-11"></a></span>
-<span id="cb3-12"><a href="#cb3-12"></a><span class="co"># If you need to block pull access from a registry, uncomment the section below</span></span>
-<span id="cb3-13"><a href="#cb3-13"></a><span class="co"># and add the registries fully-qualified name.</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a><span class="co">#</span></span>
-<span id="cb3-15"><a href="#cb3-15"></a><span class="co"># Docker only</span></span>
-<span id="cb3-16"><a href="#cb3-16"></a><span class="kw">[registries.block]</span></span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="dt">registries </span><span class="ot">=</span><span class="st"> []</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="co"># /etc/containers/registries.conf</span>
+
+<span class="kw">[registries.search]</span>
+<span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;docker.io&#39;, &#39;registry.fedoraproject.org&#39;, &#39;quay.io&#39;, &#39;registry.access.redhat.com&#39;, &#39;registry.centos.org&#39;]</span>
+
+<span class="co"># If you need to access insecure registries, add the registry&#39;s fully-qualified name.</span>
+<span class="co"># An insecure registry is one that does not have a valid SSL certificate or only does HTTP.</span>
+<span class="kw">[registries.insecure]</span>
+<span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;registry.local&#39;]</span>
+
+
+<span class="co"># If you need to block pull access from a registry, uncomment the section below</span>
+<span class="co"># and add the registries fully-qualified name.</span>
+<span class="co">#</span>
+<span class="co"># Docker only</span>
+<span class="kw">[registries.block]</span>
+<span class="dt">registries </span><span class="ot">=</span><span class="st"> []</span></code></pre></div>
 <p>Run the local registry and push to it</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># run a local registry on the host</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="ex">podman</span> run -d -p 5000:5000 --restart=always --name registry registry:2</span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="co"># or start it if you already did that before</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="ex">podman</span> start registry</span>
-<span id="cb4-5"><a href="#cb4-5"></a></span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="co"># if you alread have an image tag it correctly</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a><span class="ex">podman</span> tag localhost/example registry.local:5000/example</span>
-<span id="cb4-8"><a href="#cb4-8"></a></span>
-<span id="cb4-9"><a href="#cb4-9"></a><span class="co"># push image to local registry</span></span>
-<span id="cb4-10"><a href="#cb4-10"></a><span class="ex">podman</span> push registry.local:5000/example</span>
-<span id="cb4-11"><a href="#cb4-11"></a></span>
-<span id="cb4-12"><a href="#cb4-12"></a><span class="co"># start minikube</span></span>
-<span id="cb4-13"><a href="#cb4-13"></a><span class="ex">minikube</span> start --container-runtime=cri-o --insecure-registry=<span class="st">&quot;registry.local:5000&quot;</span></span>
-<span id="cb4-14"><a href="#cb4-14"></a></span>
-<span id="cb4-15"><a href="#cb4-15"></a><span class="co"># ssh into minikube and change host as well:</span></span>
-<span id="cb4-16"><a href="#cb4-16"></a><span class="ex">minikube</span> ssh -- eval <span class="st">&quot;printf \&#39;&#39;%s\t%s\n&#39;\&#39; \&#39;&#39;127.0.0.1&#39;\&#39; \&#39;&#39;registry.local&#39;\&#39; | sudo tee -a /etc/hosts&quot;</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># run a local registry on the host</span>
+<span class="ex">podman</span> run -d -p 5000:5000 --restart=always --name registry registry:2
+<span class="co"># or start it if you already did that before</span>
+<span class="ex">podman</span> start registry
+
+<span class="co"># if you alread have an image tag it correctly</span>
+<span class="ex">podman</span> tag localhost/example registry.local:5000/example
+
+<span class="co"># push image to local registry</span>
+<span class="ex">podman</span> push registry.local:5000/example
+
+<span class="co"># start minikube</span>
+<span class="ex">minikube</span> start --container-runtime=cri-o --insecure-registry=<span class="st">&quot;registry.local:5000&quot;</span>
+
+<span class="co"># ssh into minikube and change host as well:</span>
+<span class="ex">minikube</span> ssh -- eval <span class="st">&quot;printf \&#39;&#39;%s\t%s\n&#39;\&#39; \&#39;&#39;127.0.0.1&#39;\&#39; \&#39;&#39;registry.local&#39;\&#39; | sudo tee -a /etc/hosts&quot;</span></code></pre></div>
 <p>ssh into minikube and add the insecure registry:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># /etc/containers/registries.conf on minikube vm</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">[registries.search]</span></span>
-<span id="cb5-4"><a href="#cb5-4"></a><span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;docker.io&#39;]</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a></span>
-<span id="cb5-6"><a href="#cb5-6"></a><span class="kw">[registries.insecure]</span></span>
-<span id="cb5-7"><a href="#cb5-7"></a><span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;registry.local&#39;]</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="co"># /etc/containers/registries.conf on minikube vm</span>
+
+<span class="kw">[registries.search]</span>
+<span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;docker.io&#39;]</span>
+
+<span class="kw">[registries.insecure]</span>
+<span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;registry.local&#39;]</span></code></pre></div>
 <h1 id="method-3---use-a-registry-in-minikube">Method 3 - Use a registry in minikube</h1>
 <p>Change the insecure registries entry in your container config file:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb6-1"><a href="#cb6-1"></a><span class="co"># /etc/containers/registries.conf</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="kw">[registries.search]</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;docker.io&#39;, &#39;registry.fedoraproject.org&#39;, &#39;quay.io&#39;, &#39;registry.access.redhat.com&#39;, &#39;registry.centos.org&#39;]</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a></span>
-<span id="cb6-6"><a href="#cb6-6"></a><span class="co"># If you need to access insecure registries, add the registry&#39;s fully-qualified name.</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="co"># An insecure registry is one that does not have a valid SSL certificate or only does HTTP.</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a><span class="kw">[registries.insecure]</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a><span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;registry.local&#39;, &#39;registry.kube&#39;]</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a></span>
-<span id="cb6-11"><a href="#cb6-11"></a></span>
-<span id="cb6-12"><a href="#cb6-12"></a><span class="co"># If you need to block pull access from a registry, uncomment the section below</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a><span class="co"># and add the registries fully-qualified name.</span></span>
-<span id="cb6-14"><a href="#cb6-14"></a><span class="co">#</span></span>
-<span id="cb6-15"><a href="#cb6-15"></a><span class="co"># Docker only</span></span>
-<span id="cb6-16"><a href="#cb6-16"></a><span class="kw">[registries.block]</span></span>
-<span id="cb6-17"><a href="#cb6-17"></a><span class="dt">registries </span><span class="ot">=</span><span class="st"> []</span></span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1"></a></span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="co"># start minikube with registry addon</span></span>
-<span id="cb7-3"><a href="#cb7-3"></a><span class="ex">minikube</span> start --container-runtime=crio-o --addons registry</span>
-<span id="cb7-4"><a href="#cb7-4"></a></span>
-<span id="cb7-5"><a href="#cb7-5"></a><span class="co"># podman tag localhost/example $(minikube ip):5000/example</span></span>
-<span id="cb7-6"><a href="#cb7-6"></a></span>
-<span id="cb7-7"><a href="#cb7-7"></a><span class="bu">printf</span> <span class="st">&#39;%s\t%s\n&#39;</span> <span class="st">&quot;</span><span class="va">$(</span><span class="ex">minikube</span> ip<span class="va">)</span><span class="st">&quot;</span> <span class="st">&#39;registry.kube&#39;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee -a /etc/hosts</span>
-<span id="cb7-8"><a href="#cb7-8"></a></span>
-<span id="cb7-9"><a href="#cb7-9"></a><span class="ex">podman</span> push localhost/example <span class="va">$(</span><span class="ex">minikube</span> ip<span class="va">)</span>:5000/example</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="co"># /etc/containers/registries.conf</span>
+
+<span class="kw">[registries.search]</span>
+<span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;docker.io&#39;, &#39;registry.fedoraproject.org&#39;, &#39;quay.io&#39;, &#39;registry.access.redhat.com&#39;, &#39;registry.centos.org&#39;]</span>
+
+<span class="co"># If you need to access insecure registries, add the registry&#39;s fully-qualified name.</span>
+<span class="co"># An insecure registry is one that does not have a valid SSL certificate or only does HTTP.</span>
+<span class="kw">[registries.insecure]</span>
+<span class="dt">registries </span><span class="ot">=</span><span class="st"> [&#39;registry.local&#39;, &#39;registry.kube&#39;]</span>
+
+
+<span class="co"># If you need to block pull access from a registry, uncomment the section below</span>
+<span class="co"># and add the registries fully-qualified name.</span>
+<span class="co">#</span>
+<span class="co"># Docker only</span>
+<span class="kw">[registries.block]</span>
+<span class="dt">registries </span><span class="ot">=</span><span class="st"> []</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash">
+<span class="co"># start minikube with registry addon</span>
+<span class="ex">minikube</span> start --container-runtime=crio-o --addons registry
+
+<span class="co"># podman tag localhost/example $(minikube ip):5000/example</span>
+
+<span class="bu">printf</span> <span class="st">&#39;%s\t%s\n&#39;</span> <span class="st">&quot;</span><span class="va">$(</span><span class="ex">minikube</span> ip<span class="va">)</span><span class="st">&quot;</span> <span class="st">&#39;registry.kube&#39;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee -a /etc/hosts
+
+<span class="ex">podman</span> push localhost/example <span class="va">$(</span><span class="ex">minikube</span> ip<span class="va">)</span>:5000/example</code></pre></div>
 
   </div>
 

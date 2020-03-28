@@ -10,7 +10,7 @@
   <meta name="description" content="I wanted to setup a network of virtual machines on my server. Each VM shall provide its specified service on a dedicated subdomain. I need to create the VMs,...">
 
   <link rel="stylesheet" href="/assets/main.css">
-  <link rel="canonical" href="http://blog.hermes-technology.de/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html">
+  <link rel="canonical" href="https://blog.hermes-technology.de/openbsd/server/virtualmachine/network/2017/06/12/vmd-for-a-virtual-server-network.html">
   <link rel="alternate" type="application/rss+xml" title="Hermes Technology Blog" href="/feed.xml">
   
   
@@ -104,7 +104,7 @@
 	  </div>
 
 	  <div class="project-banner">
-		  <img class="project-img" src="http://blog.hermes-technology.de/assets/my-openbsd-server-project-banner.svg.png" alt="My OpenBSD server"/>
+		  <img class="project-img" src="https://blog.hermes-technology.de/assets/my-openbsd-server-project-banner.svg.png" alt="My OpenBSD server"/>
 		  <!--h1 class="project-title" itemprop="project banner">My OpenBSD server</h1-->
 
 	  <!--
@@ -244,16 +244,16 @@
 <figcaption>
 <i>Figure 1: Virtual Network on my server</i>
 </figcaption>
-<img src="http://blog.hermes-technology.de/assets/server-sketch-foo-bar.svg.png" title="fig:Figure 1: Virtual Network on my server" alt="Server Infrastructure" />
+<img src="https://blog.hermes-technology.de/assets/server-sketch-foo-bar.svg.png" title="Figure 1: Virtual Network on my server" alt="Server Infrastructure" />
 </figure>
 <p>You can see that there are serveral components to be configured for the virtual network to work as desired in the end:</p>
-<p>I need to…:</p>
+<p>I need to...:</p>
 <ul>
-<li>…configure <code>pf</code> for redirection and NAT</li>
-<li>…configure <code>unbound</code> for acting as a DNS server</li>
-<li>…create three different VMs (host-vm, foo-vm, bar-vm)</li>
-<li>…connect the VMs to a virtual switch called “localnet”</li>
-<li>…configure <code>relayd</code> on the host-vm for redirection of subdomain requests</li>
+<li>...configure <code>pf</code> for redirection and NAT</li>
+<li>...configure <code>unbound</code> for acting as a DNS server</li>
+<li>...create three different VMs (host-vm, foo-vm, bar-vm)</li>
+<li>...connect the VMs to a virtual switch called &quot;localnet&quot;</li>
+<li>...configure <code>relayd</code> on the host-vm for redirection of subdomain requests</li>
 </ul>
 <h3 id="outline">Outline</h3>
 <p>Here a short outline to jump back and forth (turn off <code>noscript</code> for a second to see it :-) ):</p>
@@ -267,34 +267,34 @@
 <h4 id="choose-my-mirror-to-download-from">Choose my mirror to download from</h4>
 <p>There are many mirrors that I could choose from: listed <a href="https://www.openbsd.org/ftp.html">here</a> on the OpenBSD website.</p>
 <h4 id="download-the-files">Download the files</h4>
-<p>At first I located the necessary files in a webbrowser on my system. I chose the mirror in Frankfurt, so the main url was <a href="https://ftp.hostserver.de/pub/OpenBSD/">https://ftp.hostserver.de/pub/OpenBSD/</a>.</p>
-<p>There I chose the most recent OpenBSD version 6.1 and navigated to the directory for amd64 ending here: <a href="https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/">https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/</a>.</p>
+<p>At first I located the necessary files in a webbrowser on my system. I chose the mirror in Frankfurt, so the main url was <a href="https://ftp.hostserver.de/pub/OpenBSD/" class="uri">https://ftp.hostserver.de/pub/OpenBSD/</a>.</p>
+<p>There I chose the most recent OpenBSD version 6.1 and navigated to the directory for amd64 ending here: <a href="https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/" class="uri">https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/</a>.</p>
 <p>The necessary files are:</p>
 <ul>
 <li><code>install61.fs</code> the OpenBSD installation image, that I already downloaded when I created a bootable USB Stick for my OpenBSD Installation.</li>
 <li><code>bsd.rd</code> the boot image of OpenBSD.</li>
 </ul>
-<p>I opened an ssh-session to the server and downloaded those files via <code>ftp</code> (I’m using <code>ftp</code> now and not <code>wget</code>, as it is in base, thank you for the comment Raf):</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="bu">cd</span> ~</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">mkdir</span> vm-network</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="bu">cd</span> vm-network</span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">ftp</span> https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/install61.fs</span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="fu">ftp</span> https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/bsd.rd</span></code></pre></div>
+<p>I opened an ssh-session to the server and downloaded those files via <code>ftp</code> (I'm using <code>ftp</code> now and not <code>wget</code>, as it is in base, thank you for the comment Raf):</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="bu">cd</span> ~
+<span class="fu">mkdir</span> vm-network
+<span class="bu">cd</span> vm-network
+<span class="fu">ftp</span> https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/install61.fs
+<span class="fu">ftp</span> https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/bsd.rd</code></pre></div>
 <p>As PengouinBSD correctly suggested in the comments, I should also check the downloaded files:</p>
 <pre><code>cd vm-network
 ftp https://ftp.hostserver.de/pub/OpenBSD/6.1/amd64/SHA256.sig
 signify -Cp /etc/signify/openbsd-61-base.pub -x SHA256.sig install61.fs bsd.rd</code></pre>
-<p>From now on I assume you also have a folder called <code>vm-network</code> in your user’s home directory.</p>
+<p>From now on I assume you also have a folder called <code>vm-network</code> in your user's home directory.</p>
 <h4 id="create-a-raw-disk-file-and-start-the-installation">Create a raw disk file and start the installation</h4>
-<p>I’m located in my dedicated folder <code>vm-network</code>, where the previously downloaded files <code>install61.fs</code> and <code>bsd.rd</code> are located.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a><span class="bu">cd</span> ~/vm-network</span></code></pre></div>
+<p>I'm located in my dedicated folder <code>vm-network</code>, where the previously downloaded files <code>install61.fs</code> and <code>bsd.rd</code> are located.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="bu">cd</span> ~/vm-network</code></pre></div>
 <p>Within this folder I created a raw disk image called <code>host.drive</code> with 8GB:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a><span class="ex">doas</span> vmctl create host.drive -s 8G</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> vmctl create host.drive -s 8G</code></pre></div>
 <p>And started installing on this disk interactively with a console:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1"></a><span class="ex">doas</span> vmctl start <span class="st">&quot;host-vm&quot;</span> -c -b bsd.rd -m 2G -i 1 -d host.drive -d install61.fs</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> vmctl start <span class="st">&quot;host-vm&quot;</span> -c -b bsd.rd -m 2G -i 1 -d host.drive -d install61.fs</code></pre></div>
 <p>The options that are provided to <code>vmctl</code> mean the following:</p>
 <ul>
-<li><code>start "host-vm"</code>: start the virtual machine, naming it “host-vm”</li>
+<li><code>start &quot;host-vm&quot;</code>: start the virtual machine, naming it &quot;host-vm&quot;</li>
 <li><code>-c</code>: immediately connect the console of the vm into the current shell</li>
 <li><code>-b bsd.rd</code>: choose the specified image as boot kernel</li>
 <li><code>-m 2G</code>: start the virtual machine with two gigabytes of memory</li>
@@ -315,11 +315,11 @@ signify -Cp /etc/signify/openbsd-61-base.pub -x SHA256.sig install61.fs bsd.rd</
 <tbody>
 <tr class="odd">
 <td><p>If you ever run into the problem of this annoying Error when running the command <code>vmctl start ...</code>:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1"></a><span class="ex">doas</span> vmctl start <span class="st">&quot;myvm&quot;</span> -i 1 -d xyz.drive</span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="ex">vmctl</span>: start vm command failed: No such file or directory</span></code></pre></div>
-<p>then you’re probably missing the device file for the taps in <code>/dev</code>. The installer creates 4 by default, so you’ll have to run…</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1"></a><span class="bu">cd</span> /dev<span class="kw">;</span> <span class="fu">sh</span> MAKEDEV tap4</span></code></pre></div>
-<p>…and so on for each new tap device you need.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> vmctl start <span class="st">&quot;myvm&quot;</span> -i 1 -d xyz.drive
+<span class="ex">vmctl</span>: start vm command failed: No such file or directory</code></pre></div>
+<p>then you're probably missing the device file for the taps in <code>/dev</code>. The installer creates 4 by default, so you'll have to run...</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="bu">cd</span> /dev<span class="kw">;</span> <span class="fu">sh</span> MAKEDEV tap4</code></pre></div>
+<p>...and so on for each new tap device you need.</p>
 <p>I took this tip from <a href="http://openbsd-archive.7691.n7.nabble.com/vmd-upper-limit-on-number-of-vm-s-td312916.html">here</a> when I ran into a simmilar problem.</p></td>
 </tr>
 </tbody>
@@ -348,49 +348,49 @@ signify -Cp /etc/signify/openbsd-61-base.pub -x SHA256.sig install61.fs bsd.rd</
 <tr class="odd">
 <td><pre><code>Welcome to the OpenBSD/amd64 6.1 installation program.
 (I)nstall, (U)pgrade, (A)utoinstall or (S)hell?</code></pre></td>
-<td><code>I</code></td>
-<td>I want to install OpenBSD</td>
+<td><p><code>I</code></p></td>
+<td><p>I want to install OpenBSD</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Terminal type? [vt220]</code></pre></td>
-<td><em>return</em></td>
+<td><p><em>return</em></p></td>
 <td></td>
 </tr>
 <tr class="odd">
 <td><pre><code>System hostname? (short form, e.g. &#39;foo&#39;)</code></pre></td>
-<td><code>host</code></td>
-<td>Call it host, because it will be the host for the vm net.</td>
+<td><p><code>host</code></p></td>
+<td><p>Call it host, because it will be the host for the vm net.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Available network interfaces are: vio0 vlan0
 Which network interface do you wish to configure? (or &#39;done&#39;) [vio0]</code></pre></td>
-<td><em>return</em></td>
-<td>Yes, configure vio0.</td>
+<td><p><em>return</em></p></td>
+<td><p>Yes, configure vio0.</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>IPv4 address for vio0? (or &#39;dhcp&#39; or &#39;none&#39;) [dhcp]</code></pre></td>
-<td><code>192.168.30.2</code></td>
-<td>ip address of my vm in the virtual network</td>
+<td><p><code>192.168.30.2</code></p></td>
+<td><p>ip address of my vm in the virtual network</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Netmask for vio0? [255.255.255.0]</code></pre></td>
-<td><em>return</em></td>
+<td><p><em>return</em></p></td>
 <td></td>
 </tr>
 <tr class="odd">
 <td><pre><code>IPv6 address for vio0? (or &#39;rtsol&#39; or &#39;none&#39;) [none]</code></pre></td>
-<td><em>return</em></td>
-<td>Don’t need an IPv6 address.</td>
+<td><p><em>return</em></p></td>
+<td><p>Don't need an IPv6 address.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Which network interface do you wish to configure? (or &#39;done&#39;) [done]</code></pre></td>
-<td><em>return</em></td>
-<td>I’m done.</td>
+<td><p><em>return</em></p></td>
+<td><p>I'm done.</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Default IPv4 route? (IPv4 address or none)</code></pre></td>
-<td><code>192.168.30.1</code></td>
-<td>The address of the router that manages my virtual network. I chose 192.168.30.1 for the subnet 192.168.30.0/24.</td>
+<td><p><code>192.168.30.1</code></p></td>
+<td><p>The address of the router that manages my virtual network. I chose 192.168.30.1 for the subnet 192.168.30.0/24.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>add net default: gateway 192.168.30.1</code></pre></td>
@@ -399,62 +399,62 @@ Which network interface do you wish to configure? (or &#39;done&#39;) [vio0]</co
 </tr>
 <tr class="odd">
 <td><pre><code>DNS domain name? (e.g. &#39;bar.com&#39;) [my.domain]</code></pre></td>
-<td><code>hermes-technology.de</code></td>
-<td>The root domain (In the end it will resolve to the hostname <code>host.hermes-technology.de</code>.</td>
+<td><p><code>hermes-technology.de</code></p></td>
+<td><p>The root domain (In the end it will resolve to the hostname <code>host.hermes-technology.de</code>.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>DNS nameservers? (IP address list or &#39;none&#39;) [none]</code></pre></td>
-<td><code>192.168.30.1</code></td>
-<td>My DNS nameserver should be serving on the virtual NIC with that IP.</td>
+<td><p><code>192.168.30.1</code></p></td>
+<td><p>My DNS nameserver should be serving on the virtual NIC with that IP.</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Password for root account? (will not echo)
 Password for root account? (again)</code></pre></td>
-<td>2x <code>mypasswd</code></td>
-<td>I did choose another password of course.. :D</td>
+<td><p>2x <code>mypasswd</code></p></td>
+<td><p>I did choose another password of course.. :D</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Start sshd(8) by default? [yes]</code></pre></td>
-<td><em>return</em></td>
-<td>Yes I want to connect via ssh later on.</td>
+<td><p><em>return</em></p></td>
+<td><p>Yes I want to connect via ssh later on.</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Change the default console to com0? [yes]</code></pre></td>
-<td><em>return</em></td>
-<td>sure…</td>
+<td><p><em>return</em></p></td>
+<td><p>sure...</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Which speed should com0 use? (or &#39;done&#39;) [9600]</code></pre></td>
-<td><em>return</em></td>
-<td>definitely…</td>
+<td><p><em>return</em></p></td>
+<td><p>definitely...</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Setup a user? (enter a lower-case loginname, or &#39;no&#39;) [no]</code></pre></td>
-<td><code>host</code></td>
-<td>I want the user called “host”</td>
+<td><p><code>host</code></p></td>
+<td><p>I want the user called &quot;host&quot;</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Full name for user host? [host]</code></pre></td>
-<td><em>return</em></td>
-<td>Don’t need a full name -.-</td>
+<td><p><em>return</em></p></td>
+<td><p>Don't need a full name -.-</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Password for user host? (will not echo)
 Password for user host? (again)</code></pre></td>
-<td>2x <code>mypasswd</code></td>
-<td>Another safe password…</td>
+<td><p>2x <code>mypasswd</code></p></td>
+<td><p>Another safe password...</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>WARNING: root is targeted by password guessing attacks, pubkeys are safer.
 Allow root ssh login? (yes, no, prohibit-password) [no]</code></pre></td>
-<td><em>return</em></td>
-<td>I don’t want to support a direct root login via ssh.</td>
+<td><p><em>return</em></p></td>
+<td><p>I don't want to support a direct root login via ssh.</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Available disks are: sd0 sd1.
 Which disk is the root disk? (&#39;?&#39; for details) [sd0]</code></pre></td>
-<td><code>?</code></td>
-<td>List me the disks!</td>
+<td><p><code>?</code></p></td>
+<td><p>List me the disks!</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>sd0: Block Device (8.0G)
@@ -465,14 +465,14 @@ sd1: Block Device (0.3G)</code></pre></td>
 <tr class="odd">
 <td><pre><code>Available disks are: sd0 sd1.
 Which disk is the root disk? (&#39;?&#39; for details) [sd0]</code></pre></td>
-<td><em>return</em></td>
-<td>Yes, take sd0.</td>
+<td><p><em>return</em></p></td>
+<td><p>Yes, take sd0.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>No valid MBR or GPT.
 Use (W)hole disk MBR, whole disk (G)PT or (E)dit? [whole]</code></pre></td>
-<td><em>return</em></td>
-<td>Use the whole disk!</td>
+<td><p><em>return</em></p></td>
+<td><p>Use the whole disk!</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Setting OpenBSD MBR partition to whole sd0...done.
@@ -490,8 +490,8 @@ The auto-allocated layout for sd0 is:
   j:          1340.8M         11091808  4.2BSD   2048 16384     1 # /usr/obj
   k:          1432.5M         13837856  4.2BSD   2048 16384     1 # /home
 Use (A)uto layout, (E)dit auto layout, or create (C)ustom layout? [a]</code></pre></td>
-<td><em>return</em></td>
-<td>Auto layout worked for me..</td>
+<td><p><em>return</em></p></td>
+<td><p>Auto layout worked for me..</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Rounding size to bsize (32 sectors): 268416
@@ -526,25 +526,25 @@ to enlarge last cylinder group
 5 cylinder groups of 52.97MB, 3390 blocks, 6784 inodes each
 Available disks are: sd1.
 Which disk do you wish to initialize? (or &#39;done&#39;) [done]</code></pre></td>
-<td><em>return</em></td>
-<td>Don’t need another disk.</td>
+<td><p><em>return</em></p></td>
+<td><p>Don't need another disk.</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Let&#39;s install the sets!
 Location of sets? (disk http or &#39;done&#39;) [http]</code></pre></td>
-<td><code>disk</code></td>
-<td>Ok the sets are on the disk with “install61.fs” on.</td>
+<td><p><code>disk</code></p></td>
+<td><p>Ok the sets are on the disk with &quot;install61.fs&quot; on.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Is the disk partition already mounted? [no]</code></pre></td>
-<td><em>return</em></td>
-<td>No the other disk is not mounted yet.</td>
+<td><p><em>return</em></p></td>
+<td><p>No the other disk is not mounted yet.</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Available disks are: sd0 sd1.
 Which disk contains the install media? (or &#39;done&#39;) [sd1]</code></pre></td>
-<td><em>return</em></td>
-<td>Ok sd0 was the 8G so sd1 should be the one I want.</td>
+<td><p><em>return</em></p></td>
+<td><p>Ok sd0 was the 8G so sd1 should be the one I want.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Which disk contains the install media? (or &#39;done&#39;) [sd1]
@@ -552,13 +552,13 @@ Which disk contains the install media? (or &#39;done&#39;) [sd1]</code></pre></t
   i:              960               64   MSDOS
 Available sd1 partitions are: a i.
 Which sd1 partition has the install sets? (or &#39;done&#39;) [a]</code></pre></td>
-<td><em>return</em></td>
-<td>mmh, yes seems as if partition <code>a</code> contains the sets.</td>
+<td><p><em>return</em></p></td>
+<td><p>mmh, yes seems as if partition <code>a</code> contains the sets.</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Pathname to the sets? (or &#39;done&#39;) [6.1/amd64]</code></pre></td>
-<td><em>return</em></td>
-<td>That pathname sounds good to me</td>
+<td><p><em>return</em></p></td>
+<td><p>That pathname sounds good to me</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Select sets by entering a set name, a file name pattern or &#39;all&#39;. De-select
@@ -568,21 +568,21 @@ sets are labelled &#39;[X]&#39;.
     [X] bsd.rd        [X] comp61.tgz    [X] xbase61.tgz   [X] xserv61.tgz
     [ ] bsd.mp        [X] man61.tgz     [X] xshare61.tgz
 Set name(s)? (or &#39;abort&#39; or &#39;done&#39;) [done]</code></pre></td>
-<td><code>all</code></td>
-<td>I want them all!!</td>
+<td><p><code>all</code></p></td>
+<td><p>I want them all!!</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>    [X] bsd           [X] base61.tgz    [X] game61.tgz    [X] xfont61.tgz
     [X] bsd.rd        [X] comp61.tgz    [X] xbase61.tgz   [X] xserv61.tgz
     [X] bsd.mp        [X] man61.tgz     [X] xshare61.tgz
 Set name(s)? (or &#39;abort&#39; or &#39;done&#39;) [done]</code></pre></td>
-<td><em>return</em></td>
-<td>Ok, now you can go on.</td>
+<td><p><em>return</em></p></td>
+<td><p>Ok, now you can go on.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Directory does not contain SHA256.sig. Continue without verification? [no]</code></pre></td>
-<td><code>yes</code></td>
-<td>There is no way around that..</td>
+<td><p><code>yes</code></p></td>
+<td><p>There is no way around that..</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>Installing bsd          100% |**************************| 10433 KB    00:00
@@ -599,8 +599,8 @@ Installing xshare61.tgz 100% |**************************|  4406 KB    00:00
 Installing xfont61.tgz  100% |**************************| 39342 KB    00:02
 Installing xserv61.tgz  100% |**************************| 13001 KB    00:00
 Location of sets? (disk http or &#39;done&#39;) [done]</code></pre></td>
-<td><em>return</em></td>
-<td>That’s it with the sets.</td>
+<td><p><em>return</em></p></td>
+<td><p>That's it with the sets.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>What timezone are you in? (&#39;?&#39; for list) [Canada/Mountain]
@@ -615,13 +615,13 @@ Brazil/      Etc/         Hongkong     MST7MDT      ROK          posixrules
 CET          Europe/      Iceland      Mexico/      Singapore    right/
 CST6CDT      Factory      Indian/      NZ           Turkey
 Canada/      GB           Iran         NZ-CHAT      UCT</code></pre></td>
-<td><code>?</code></td>
-<td>Aha… ok I guess there is a Berlin in Europe…</td>
+<td><p><code>?</code></p></td>
+<td><p>Aha... ok I guess there is a Berlin in Europe...</p></td>
 </tr>
 <tr class="odd">
 <td><pre><code>What timezone are you in? (&#39;?&#39; for list) [Canada/Mountain]</code></pre></td>
-<td><code>Europe/Berlin</code></td>
-<td>…so I take that.</td>
+<td><p><code>Europe/Berlin</code></p></td>
+<td><p>...so I take that.</p></td>
 </tr>
 <tr class="even">
 <td><pre><code>Saving configuration files...done.
@@ -640,27 +640,27 @@ using the &#39;mail&#39; command.</code></pre></td>
 </tbody>
 </table>
 </figure>
-<p>Ok now he is telling me to reboot the machine… But I can easily just choose to exit the vm via this key-sequence:</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb47-1"><a href="#cb47-1"></a><span class="ex">~</span>^<span class="ex">D</span></span></code></pre></div>
+<p>Ok now he is telling me to reboot the machine... But I can easily just choose to exit the vm via this key-sequence:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">~</span>^<span class="ex">D</span></code></pre></div>
 <p>So first enter the <strong>tilde</strong> symbol and afterwards <strong>Ctrl-D</strong>.</p>
 <p><em>The tilde is not supposed to apear in the terminal input.</em></p>
 <p>Thereafter I stopped the created virtual machine:</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1"></a><span class="ex">doas</span> vmctl stop <span class="st">&quot;host-vm&quot;</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> vmctl stop <span class="st">&quot;host-vm&quot;</span></code></pre></div>
 <p>And made a copy of the installation:</p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1"></a><span class="ex">doas</span> cp host.drive host.drive.bak</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> cp host.drive host.drive.bak</code></pre></div>
 <p>I also checked if everything installed fine:</p>
 <pre><code>doas vmctl start &quot;host-vm&quot; -c -i 1 -d host.drive</code></pre>
 <p>It should boot into the installed system now asking you for login and password in the end.</p>
 <p>I configured <code>doas</code> and added the <code>/etc/installurl</code> file as shown in my last <a href="/openbsd/server/2017/06/06/a-first-server.html#openbsd-server---install-and-set-up">post</a>.</p>
 <h3 id="duplicate-the-host-vm-for-other-vms-i-want">Duplicate the Host VM for other VMs I want</h3>
 <p>Now I could easily duplicate the created disk file for other needed VMs:</p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb51-1"><a href="#cb51-1"></a><span class="ex">doas</span> cp host.drive foo.drive</span>
-<span id="cb51-2"><a href="#cb51-2"></a><span class="ex">doas</span> cp host.drive bar.drive</span></code></pre></div>
-<p>Afterwards I started each VM and did some adjustments (I will only show what I did for the “foo” vm as the “bar” vm will be configured analogously:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> cp host.drive foo.drive
+<span class="ex">doas</span> cp host.drive bar.drive</code></pre></div>
+<p>Afterwards I started each VM and did some adjustments (I will only show what I did for the &quot;foo&quot; vm as the &quot;bar&quot; vm will be configured analogously:</p>
 <p>Starting the VM as usual:</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1"></a><span class="ex">doas</span> vmctl start <span class="st">&quot;foo-vm&quot;</span> -c -i 1 -d foo.drive</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> vmctl start <span class="st">&quot;foo-vm&quot;</span> -c -i 1 -d foo.drive</code></pre></div>
 <p>Add the foo user:</p>
-<div class="sourceCode" id="cb53"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb53-1"><a href="#cb53-1"></a><span class="ex">doas</span> adduser</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> adduser</code></pre></div>
 <p>I copied my terminal output:</p>
 <pre><code>Couldn&#39;t find /etc/adduser.conf: creating a new adduser configuration file
 Reading /etc/shells
@@ -709,19 +709,19 @@ Copy files from /etc/skel to /home/foo
 Add another user? (y/n) [y]: n
 Goodbye!</code></pre>
 <p>Deleted the host user:</p>
-<div class="sourceCode" id="cb55"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb55-1"><a href="#cb55-1"></a><span class="ex">doas</span> userdel host</span>
-<span id="cb55-2"><a href="#cb55-2"></a><span class="ex">doas</span> rm -rf /home/host</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> userdel host
+<span class="ex">doas</span> rm -rf /home/host</code></pre></div>
 <p>Configured the new hostname:</p>
-<div class="sourceCode" id="cb56"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb56-1"><a href="#cb56-1"></a><span class="co">## /etc/hosts</span></span>
-<span id="cb56-2"><a href="#cb56-2"></a><span class="ex">127.0.0.1</span>       localhost</span>
-<span id="cb56-3"><a href="#cb56-3"></a>::<span class="ex">1</span>             localhost</span>
-<span id="cb56-4"><a href="#cb56-4"></a><span class="ex">192.168.30.10</span>   foo.hermes-technology.de foo</span></code></pre></div>
-<div class="sourceCode" id="cb57"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb57-1"><a href="#cb57-1"></a><span class="co">## /etc/myname</span></span>
-<span id="cb57-2"><a href="#cb57-2"></a><span class="ex">foo.hermes-technology.de</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">## /etc/hosts</span>
+<span class="ex">127.0.0.1</span>       localhost
+::<span class="ex">1</span>             localhost
+<span class="ex">192.168.30.10</span>   foo.hermes-technology.de foo</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">## /etc/myname</span>
+<span class="ex">foo.hermes-technology.de</span></code></pre></div>
 <p>Alter the <code>/etc/hostname.vio0</code> for the correct ip (it will be 192.168.30.4 for the bar-vm):</p>
-<div class="sourceCode" id="cb58"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb58-1"><a href="#cb58-1"></a><span class="co">## /etc/hostname.vio0</span></span>
-<span id="cb58-2"><a href="#cb58-2"></a><span class="ex">inet</span> 192.168.30.3 255.255.255.0</span></code></pre></div>
-<p>Then I enabled httpd to show a “Hello from foo” html page.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">## /etc/hostname.vio0</span>
+<span class="ex">inet</span> 192.168.30.3 255.255.255.0</code></pre></div>
+<p>Then I enabled httpd to show a &quot;Hello from foo&quot; html page.</p>
 <p>Refer to my last post to see how to <a href="/openbsd/server/2017/06/06/a-first-server.html#start-httpd-and-show-your-website">setup httpd for this task</a>:</p>
 <p>I exited the VM.</p>
 <p><strong>I did the above for each VM that I added to the virtual network.</strong></p>
@@ -733,223 +733,247 @@ Goodbye!</code></pre>
 <h3 id="the-virtual-network-interface-card-nic">The virtual network interface card (NIC)</h3>
 <p>Creating a virtual network device was very easy in OpenBSD.</p>
 <p>I just had to create a file called <code>/etc/hostname.vether0</code> and insert the desired configuration:</p>
-<div class="sourceCode" id="cb59"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb59-1"><a href="#cb59-1"></a><span class="ex">doas</span> -s</span>
-<span id="cb59-2"><a href="#cb59-2"></a><span class="fu">touch</span> /etc/hostname.vether0</span>
-<span id="cb59-3"><a href="#cb59-3"></a><span class="bu">echo</span> <span class="st">&quot;inet 192.168.30.1 255.255.255.0 NONE&quot;</span> <span class="op">&gt;</span> /etc/hostname.vether0</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> -s
+<span class="fu">touch</span> /etc/hostname.vether0
+<span class="bu">echo</span> <span class="st">&quot;inet 192.168.30.1 255.255.255.0 NONE&quot;</span> <span class="op">&gt;</span> /etc/hostname.vether0</code></pre></div>
 <p>Now on next reboot or after restarting the networking service I had the vether0 device at 192.168.30.1.</p>
 <h3 id="pf---the-openbsd-firewall">PF - the OpenBSD firewall</h3>
 <p>There is a configuration file for the firewall at <code>/etc/pf.conf</code>, I configured it like this:</p>
-<div class="sourceCode" id="cb60"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1"></a><span class="co">#       $OpenBSD: pf.conf,v 1.54 2014/08/23 05:49:42 deraadt Exp $</span></span>
-<span id="cb60-2"><a href="#cb60-2"></a><span class="co">#</span></span>
-<span id="cb60-3"><a href="#cb60-3"></a><span class="co"># See pf.conf(5) and /etc/examples/pf.conf</span></span>
-<span id="cb60-4"><a href="#cb60-4"></a></span>
-<span id="cb60-5"><a href="#cb60-5"></a><span class="va">int_if=</span><span class="st">&quot;{ vether0 em0 }&quot;</span></span>
-<span id="cb60-6"><a href="#cb60-6"></a></span>
-<span id="cb60-7"><a href="#cb60-7"></a><span class="co">##set skip on lo</span></span>
-<span id="cb60-8"><a href="#cb60-8"></a></span>
-<span id="cb60-9"><a href="#cb60-9"></a><span class="co">##block return  # block stateless traffic</span></span>
-<span id="cb60-10"><a href="#cb60-10"></a><span class="co">##pass          # establish keep-state</span></span>
-<span id="cb60-11"><a href="#cb60-11"></a></span>
-<span id="cb60-12"><a href="#cb60-12"></a><span class="co"># By default, do not permit remote connections to X11</span></span>
-<span id="cb60-13"><a href="#cb60-13"></a><span class="co">##block return in on ! lo0 proto tcp to port 6000:6010</span></span>
-<span id="cb60-14"><a href="#cb60-14"></a></span>
-<span id="cb60-15"><a href="#cb60-15"></a><span class="kw">set</span> <span class="ex">block-policy</span> drop</span>
-<span id="cb60-16"><a href="#cb60-16"></a><span class="kw">set</span> <span class="ex">loginterface</span> egress</span>
-<span id="cb60-17"><a href="#cb60-17"></a><span class="kw">set</span> <span class="ex">skip</span> on lo0</span>
-<span id="cb60-18"><a href="#cb60-18"></a></span>
-<span id="cb60-19"><a href="#cb60-19"></a><span class="co">## act as a nat</span></span>
-<span id="cb60-20"><a href="#cb60-20"></a><span class="ex">match</span> in all scrub (no-df random-id max-mss 1440)</span>
-<span id="cb60-21"><a href="#cb60-21"></a><span class="ex">match</span> out on egress inet from !(egress:network) <span class="ex">to</span> any nat-to (egress:0)</span>
-<span id="cb60-22"><a href="#cb60-22"></a></span>
-<span id="cb60-23"><a href="#cb60-23"></a><span class="co">## allow all outgoing</span></span>
-<span id="cb60-24"><a href="#cb60-24"></a><span class="ex">pass</span> out quick inet</span>
-<span id="cb60-25"><a href="#cb60-25"></a><span class="ex">pass</span> in on <span class="va">$int_if</span> inet</span>
-<span id="cb60-26"><a href="#cb60-26"></a></span>
-<span id="cb60-27"><a href="#cb60-27"></a><span class="co">## redirect http and https to the host of the vms</span></span>
-<span id="cb60-28"><a href="#cb60-28"></a><span class="ex">pass</span> in on egress inet proto tcp from any to (egress) <span class="ex">port</span> { 80 443 } <span class="ex">rdr-to</span> 192.168.30.2</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#       $OpenBSD: pf.conf,v 1.54 2014/08/23 05:49:42 deraadt Exp $</span>
+<span class="co">#</span>
+<span class="co"># See pf.conf(5) and /etc/examples/pf.conf</span>
+
+<span class="va">int_if=</span><span class="st">&quot;{ vether0 em0 }&quot;</span>
+
+<span class="co">##set skip on lo</span>
+
+<span class="co">##block return  # block stateless traffic</span>
+<span class="co">##pass          # establish keep-state</span>
+
+<span class="co"># By default, do not permit remote connections to X11</span>
+<span class="co">##block return in on ! lo0 proto tcp to port 6000:6010</span>
+
+<span class="kw">set</span> <span class="ex">block-policy</span> drop
+<span class="kw">set</span> <span class="ex">loginterface</span> egress
+<span class="kw">set</span> <span class="ex">skip</span> on lo0
+
+<span class="co">## act as a nat</span>
+<span class="ex">match</span> in all scrub (no-df random-id max-mss 1440)
+<span class="ex">match</span> out on egress inet from !(egress:network) <span class="ex">to</span> any nat-to (egress:0)
+
+<span class="co">## allow all outgoing</span>
+<span class="ex">pass</span> out quick inet
+<span class="ex">pass</span> in on <span class="va">$int_if</span> inet
+
+<span class="co">## redirect http and https to the host of the vms</span>
+<span class="ex">pass</span> in on egress inet proto tcp from any to (egress) <span class="ex">port</span> { 80 443 } <span class="ex">rdr-to</span> 192.168.30.2</code></pre></div>
 <p>Now incoming http traffic will be redirected to the host-vm as soon as it is up and running.</p>
 <p>To apply the configuration changes I executed <code>doas pfctl -f /etc/pf.conf</code>.</p>
 <p>And verified those changes via <code>doas pfctl -sr</code>.</p>
 <h3 id="unbound---my-dns-name-server">unbound - my DNS name server</h3>
 <p>I enabled <code>unbound</code>:</p>
-<div class="sourceCode" id="cb61"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb61-1"><a href="#cb61-1"></a><span class="ex">doas</span> rcctl enable unbound</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> rcctl enable unbound</code></pre></div>
 <p>And configured it the way I needed it:</p>
-<div class="sourceCode" id="cb62"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb62-1"><a href="#cb62-1"></a><span class="co">## /var/unbound/etc/unbound.conf                                                                                                                                                                       </span></span>
-<span id="cb62-2"><a href="#cb62-2"></a><span class="co"># $OpenBSD: unbound.conf,v 1.7 2016/03/30 01:41:25 sthen Exp $</span></span>
-<span id="cb62-3"><a href="#cb62-3"></a></span>
-<span id="cb62-4"><a href="#cb62-4"></a><span class="co">## I definately want the vether0 device act as a DNS name server for the virtual network</span></span>
-<span id="cb62-5"><a href="#cb62-5"></a><span class="ex">server</span>:</span>
-<span id="cb62-6"><a href="#cb62-6"></a>        <span class="ex">interface</span>: 192.168.30.1</span>
-<span id="cb62-7"><a href="#cb62-7"></a>        <span class="ex">interface</span>: 127.0.0.1</span>
-<span id="cb62-8"><a href="#cb62-8"></a>        <span class="ex">interface</span>: ::1</span>
-<span id="cb62-9"><a href="#cb62-9"></a>        <span class="co">#do-ip6: no</span></span>
-<span id="cb62-10"><a href="#cb62-10"></a></span>
-<span id="cb62-11"><a href="#cb62-11"></a>        <span class="co"># override the default &quot;any&quot; address to send queries; if multiple</span></span>
-<span id="cb62-12"><a href="#cb62-12"></a>        <span class="co"># addresses are available, they are used randomly to counter spoofing</span></span>
-<span id="cb62-13"><a href="#cb62-13"></a>        <span class="co">#outgoing-interface: 192.0.2.1</span></span>
-<span id="cb62-14"><a href="#cb62-14"></a>        <span class="co">#outgoing-interface: 2001:db8::53</span></span>
-<span id="cb62-15"><a href="#cb62-15"></a></span>
-<span id="cb62-16"><a href="#cb62-16"></a>        <span class="ex">access-control</span>: 0.0.0.0/0 refuse</span>
-<span id="cb62-17"><a href="#cb62-17"></a>        <span class="ex">access-control</span>: 127.0.0.0/8 allow</span>
-<span id="cb62-18"><a href="#cb62-18"></a>        <span class="ex">access-control</span>: ::0/0 refuse</span>
-<span id="cb62-19"><a href="#cb62-19"></a>        <span class="ex">access-control</span>: ::1 allow</span>
-<span id="cb62-20"><a href="#cb62-20"></a>        <span class="ex">access-control</span>: 192.168.1.0/24 allow</span>
-<span id="cb62-21"><a href="#cb62-21"></a></span>
-<span id="cb62-22"><a href="#cb62-22"></a>        <span class="ex">access-control</span>: 192.168.30.0/24 allow <span class="co">## I want the virtual network to be allowed for access</span></span>
-<span id="cb62-23"><a href="#cb62-23"></a>        </span>
-<span id="cb62-24"><a href="#cb62-24"></a>        <span class="ex">do-not-query-localhost</span>: no</span>
-<span id="cb62-25"><a href="#cb62-25"></a></span>
-<span id="cb62-26"><a href="#cb62-26"></a>        <span class="ex">hide-identity</span>: yes</span>
-<span id="cb62-27"><a href="#cb62-27"></a>        <span class="ex">hide-version</span>: yes</span>
-<span id="cb62-28"><a href="#cb62-28"></a></span>
-<span id="cb62-29"><a href="#cb62-29"></a>        <span class="co"># Uncomment to enable qname minimisation.</span></span>
-<span id="cb62-30"><a href="#cb62-30"></a>        <span class="co"># https://tools.ietf.org/html/draft-ietf-dnsop-qname-minimisation-08</span></span>
-<span id="cb62-31"><a href="#cb62-31"></a>        <span class="co">#</span></span>
-<span id="cb62-32"><a href="#cb62-32"></a>        <span class="co"># qname-minimisation: yes</span></span>
-<span id="cb62-33"><a href="#cb62-33"></a></span>
-<span id="cb62-34"><a href="#cb62-34"></a>        <span class="co"># Uncomment to enable DNSSEC validation.</span></span>
-<span id="cb62-35"><a href="#cb62-35"></a>        <span class="co">#</span></span>
-<span id="cb62-36"><a href="#cb62-36"></a>        <span class="co">#auto-trust-anchor-file: &quot;/var/unbound/db/root.key&quot;</span></span>
-<span id="cb62-37"><a href="#cb62-37"></a></span>
-<span id="cb62-38"><a href="#cb62-38"></a>        <span class="co"># Serve zones authoritatively from Unbound to resolver clients.</span></span>
-<span id="cb62-39"><a href="#cb62-39"></a>        <span class="co"># Not for external service.</span></span>
-<span id="cb62-40"><a href="#cb62-40"></a>        <span class="co">#</span></span>
-<span id="cb62-41"><a href="#cb62-41"></a>        <span class="co">#local-zone: &quot;local.&quot; static</span></span>
-<span id="cb62-42"><a href="#cb62-42"></a>        <span class="co">#local-data: &quot;mycomputer.local. IN A 192.0.2.51&quot;</span></span>
-<span id="cb62-43"><a href="#cb62-43"></a>        <span class="co">#local-zone: &quot;2.0.192.in-addr.arpa.&quot; static</span></span>
-<span id="cb62-44"><a href="#cb62-44"></a>        <span class="co">#local-data-ptr: &quot;192.0.2.51 mycomputer.local&quot;</span></span>
-<span id="cb62-45"><a href="#cb62-45"></a></span>
-<span id="cb62-46"><a href="#cb62-46"></a>        <span class="co"># UDP EDNS reassembly buffer advertised to peers. Default 4096.</span></span>
-<span id="cb62-47"><a href="#cb62-47"></a>        <span class="co"># May need lowering on broken networks with fragmentation/MTU issues,</span></span>
-<span id="cb62-48"><a href="#cb62-48"></a>        <span class="co"># particularly if validating DNSSEC.</span></span>
-<span id="cb62-49"><a href="#cb62-49"></a>        <span class="co">#</span></span>
-<span id="cb62-50"><a href="#cb62-50"></a>        <span class="co">#edns-buffer-size: 1480</span></span>
-<span id="cb62-51"><a href="#cb62-51"></a></span>
-<span id="cb62-52"><a href="#cb62-52"></a>        <span class="co"># Use TCP for &quot;forward-zone&quot; requests. Useful if you are making</span></span>
-<span id="cb62-53"><a href="#cb62-53"></a>        <span class="co"># DNS requests over an SSH port forwarding.</span></span>
-<span id="cb62-54"><a href="#cb62-54"></a>        <span class="co">#</span></span>
-<span id="cb62-55"><a href="#cb62-55"></a>        <span class="co">#tcp-upstream: yes</span></span>
-<span id="cb62-56"><a href="#cb62-56"></a></span>
-<span id="cb62-57"><a href="#cb62-57"></a>        <span class="co"># DNS64 options, synthesizes AAAA records for hosts that don&#39;t have</span></span>
-<span id="cb62-58"><a href="#cb62-58"></a>        <span class="co"># them. For use with NAT64 (PF &quot;af-to&quot;).</span></span>
-<span id="cb62-59"><a href="#cb62-59"></a>        <span class="co">#</span></span>
-<span id="cb62-60"><a href="#cb62-60"></a>        <span class="co">#module-config: &quot;dns64 validator iterator&quot;</span></span>
-<span id="cb62-61"><a href="#cb62-61"></a>        <span class="co">#dns64-prefix: 64:ff9b::/96     # well-known prefix (default)</span></span>
-<span id="cb62-62"><a href="#cb62-62"></a>        <span class="co">#dns64-synthall: no</span></span>
-<span id="cb62-63"><a href="#cb62-63"></a></span>
-<span id="cb62-64"><a href="#cb62-64"></a><span class="ex">remote-control</span>:</span>
-<span id="cb62-65"><a href="#cb62-65"></a>        <span class="ex">control-enable</span>: yes</span>
-<span id="cb62-66"><a href="#cb62-66"></a>        <span class="ex">control-use-cert</span>: no</span>
-<span id="cb62-67"><a href="#cb62-67"></a>        <span class="ex">control-interface</span>: /var/run/unbound.sock</span>
-<span id="cb62-68"><a href="#cb62-68"></a></span>
-<span id="cb62-69"><a href="#cb62-69"></a><span class="ex">forward-zone</span>:</span>
-<span id="cb62-70"><a href="#cb62-70"></a>        <span class="ex">name</span>: <span class="st">&quot;.&quot;</span></span>
-<span id="cb62-71"><a href="#cb62-71"></a>        <span class="ex">forward-addr</span>: 192.168.1.1 <span class="co">## Forward the DNS Requests to my local real router</span></span>
-<span id="cb62-72"><a href="#cb62-72"></a>        <span class="ex">forward-addr</span>: 74.82.42.42 <span class="co"># he.net</span></span>
-<span id="cb62-73"><a href="#cb62-73"></a>        <span class="ex">forward-addr</span>: 2001:470:20::2 <span class="co"># he.net v6</span></span>
-<span id="cb62-74"><a href="#cb62-74"></a>        <span class="ex">forward-addr</span>: 8.8.8.8 <span class="co"># google.com</span></span>
-<span id="cb62-75"><a href="#cb62-75"></a>        <span class="ex">forward-addr</span>: 2001:4860:4860::8888 <span class="co"># google.com v6</span></span>
-<span id="cb62-76"><a href="#cb62-76"></a>        <span class="ex">forward-addr</span>: 208.67.222.222 <span class="co"># opendns.com</span></span>
-<span id="cb62-77"><a href="#cb62-77"></a>        <span class="ex">forward-first</span>: yes <span class="co"># try direct if forwarder fails</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">## /var/unbound/etc/unbound.conf                                                                                                                                                                       </span>
+<span class="co"># $OpenBSD: unbound.conf,v 1.7 2016/03/30 01:41:25 sthen Exp $</span>
+
+<span class="co">## I definately want the vether0 device act as a DNS name server for the virtual network</span>
+<span class="ex">server</span>:
+        <span class="ex">interface</span>: 192.168.30.1
+        <span class="ex">interface</span>: 127.0.0.1
+        <span class="ex">interface</span>: ::1
+        <span class="co">#do-ip6: no</span>
+
+        <span class="co"># override the default &quot;any&quot; address to send queries; if multiple</span>
+        <span class="co"># addresses are available, they are used randomly to counter spoofing</span>
+        <span class="co">#outgoing-interface: 192.0.2.1</span>
+        <span class="co">#outgoing-interface: 2001:db8::53</span>
+
+        <span class="ex">access-control</span>: 0.0.0.0/0 refuse
+        <span class="ex">access-control</span>: 127.0.0.0/8 allow
+        <span class="ex">access-control</span>: ::0/0 refuse
+        <span class="ex">access-control</span>: ::1 allow
+        <span class="ex">access-control</span>: 192.168.1.0/24 allow
+
+        <span class="ex">access-control</span>: 192.168.30.0/24 allow <span class="co">## I want the virtual network to be allowed for access</span>
+        
+        <span class="ex">do-not-query-localhost</span>: no
+
+        <span class="ex">hide-identity</span>: yes
+        <span class="ex">hide-version</span>: yes
+
+        <span class="co"># Uncomment to enable qname minimisation.</span>
+        <span class="co"># https://tools.ietf.org/html/draft-ietf-dnsop-qname-minimisation-08</span>
+        <span class="co">#</span>
+        <span class="co"># qname-minimisation: yes</span>
+
+        <span class="co"># Uncomment to enable DNSSEC validation.</span>
+        <span class="co">#</span>
+        <span class="co">#auto-trust-anchor-file: &quot;/var/unbound/db/root.key&quot;</span>
+
+        <span class="co"># Serve zones authoritatively from Unbound to resolver clients.</span>
+        <span class="co"># Not for external service.</span>
+        <span class="co">#</span>
+        <span class="co">#local-zone: &quot;local.&quot; static</span>
+        <span class="co">#local-data: &quot;mycomputer.local. IN A 192.0.2.51&quot;</span>
+        <span class="co">#local-zone: &quot;2.0.192.in-addr.arpa.&quot; static</span>
+        <span class="co">#local-data-ptr: &quot;192.0.2.51 mycomputer.local&quot;</span>
+
+        <span class="co"># UDP EDNS reassembly buffer advertised to peers. Default 4096.</span>
+        <span class="co"># May need lowering on broken networks with fragmentation/MTU issues,</span>
+        <span class="co"># particularly if validating DNSSEC.</span>
+        <span class="co">#</span>
+        <span class="co">#edns-buffer-size: 1480</span>
+
+        <span class="co"># Use TCP for &quot;forward-zone&quot; requests. Useful if you are making</span>
+        <span class="co"># DNS requests over an SSH port forwarding.</span>
+        <span class="co">#</span>
+        <span class="co">#tcp-upstream: yes</span>
+
+        <span class="co"># DNS64 options, synthesizes AAAA records for hosts that don&#39;t have</span>
+        <span class="co"># them. For use with NAT64 (PF &quot;af-to&quot;).</span>
+        <span class="co">#</span>
+        <span class="co">#module-config: &quot;dns64 validator iterator&quot;</span>
+        <span class="co">#dns64-prefix: 64:ff9b::/96     # well-known prefix (default)</span>
+        <span class="co">#dns64-synthall: no</span>
+
+<span class="ex">remote-control</span>:
+        <span class="ex">control-enable</span>: yes
+        <span class="ex">control-use-cert</span>: no
+        <span class="ex">control-interface</span>: /var/run/unbound.sock
+
+<span class="ex">forward-zone</span>:
+        <span class="ex">name</span>: <span class="st">&quot;.&quot;</span>
+        <span class="ex">forward-addr</span>: 192.168.1.1 <span class="co">## Forward the DNS Requests to my local real router</span>
+        <span class="ex">forward-addr</span>: 74.82.42.42 <span class="co"># he.net</span>
+        <span class="ex">forward-addr</span>: 2001:470:20::2 <span class="co"># he.net v6</span>
+        <span class="ex">forward-addr</span>: 8.8.8.8 <span class="co"># google.com</span>
+        <span class="ex">forward-addr</span>: 2001:4860:4860::8888 <span class="co"># google.com v6</span>
+        <span class="ex">forward-addr</span>: 208.67.222.222 <span class="co"># opendns.com</span>
+        <span class="ex">forward-first</span>: yes <span class="co"># try direct if forwarder fails</span></code></pre></div>
 <p>Now DNS requests from the 192.168.30.0/24 subnet will be answered by the DNS server at 192.168.30.1.</p>
 <h3 id="vmd---what-goes-into-etcvm.conf">vmd - What goes into /etc/vm.conf</h3>
 <p>Now my next task was to create the correct vm configuration, so that each vm would be connected to a local virtual switch managing the virtual network.</p>
-<div class="sourceCode" id="cb63" data-startFrom="1"><pre class="sourceCode numberSource bash numberLines"><code class="sourceCode bash"><span id="cb63-1"><a href="#cb63-1"></a><span class="co">## /etc/vm.conf</span></span>
-<span id="cb63-2"><a href="#cb63-2"></a><span class="va">files=</span>  <span class="ex">/home/user/vm-network/</span> <span class="co"># our disk files are at the previously created location (change &quot;user&quot; to your username)</span></span>
-<span id="cb63-3"><a href="#cb63-3"></a></span>
-<span id="cb63-4"><a href="#cb63-4"></a><span class="ex">vm</span> host-vm { <span class="co"># we want a vm called &quot;host-vm&quot;</span></span>
-<span id="cb63-5"><a href="#cb63-5"></a>        <span class="ex">memory</span> 2g <span class="co">#with 2gigs of memory</span></span>
-<span id="cb63-6"><a href="#cb63-6"></a>        <span class="ex">disk</span> <span class="va">$files</span> host.drive <span class="co"># running the host.drive</span></span>
-<span id="cb63-7"><a href="#cb63-7"></a>        <span class="ex">interface</span> tap { lladdr 00:00:00:00:00:02 switch localnet } <span class="co"># on a network interface with the specified MAC on the localnet switch</span></span>
-<span id="cb63-8"><a href="#cb63-8"></a>}</span>
-<span id="cb63-9"><a href="#cb63-9"></a></span>
-<span id="cb63-10"><a href="#cb63-10"></a><span class="ex">vm</span> foo-vm {</span>
-<span id="cb63-11"><a href="#cb63-11"></a>        <span class="ex">memory</span> 2g</span>
-<span id="cb63-12"><a href="#cb63-12"></a>        <span class="ex">disk</span> <span class="va">$files</span> foo.drive</span>
-<span id="cb63-13"><a href="#cb63-13"></a>        <span class="ex">interface</span> tap { lladdr 00:00:00:00:00:03 switch localnet }</span>
-<span id="cb63-14"><a href="#cb63-14"></a>}</span>
-<span id="cb63-15"><a href="#cb63-15"></a></span>
-<span id="cb63-16"><a href="#cb63-16"></a><span class="ex">vm</span> bar-vm {</span>
-<span id="cb63-17"><a href="#cb63-17"></a>        <span class="ex">memory</span> 2g</span>
-<span id="cb63-18"><a href="#cb63-18"></a>        <span class="ex">disk</span> <span class="va">$files</span> bar.drive</span>
-<span id="cb63-19"><a href="#cb63-19"></a>        <span class="ex">interface</span> tap { lladdr 00:00:00:00:00:04 switch localnet }</span>
-<span id="cb63-20"><a href="#cb63-20"></a>}</span>
-<span id="cb63-21"><a href="#cb63-21"></a></span>
-<span id="cb63-22"><a href="#cb63-22"></a><span class="ex">switch</span> localnet { <span class="co"># this is the switch called &quot;localnet&quot;</span></span>
-<span id="cb63-23"><a href="#cb63-23"></a>        <span class="ex">add</span> vether0 <span class="co"># where the virtual interface is added to</span></span>
-<span id="cb63-24"><a href="#cb63-24"></a>}</span></code></pre></div>
+<div class="sourceCode" startFrom="1"><table class="sourceCode bash numberLines"><tr class="sourceCode"><td class="lineNumbers"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+</pre></td><td class="sourceCode"><pre><code class="sourceCode bash"><span class="co">## /etc/vm.conf</span>
+<span class="va">files=</span>  <span class="ex">/home/user/vm-network/</span> <span class="co"># our disk files are at the previously created location (change &quot;user&quot; to your username)</span>
+
+<span class="ex">vm</span> host-vm { <span class="co"># we want a vm called &quot;host-vm&quot;</span>
+        <span class="ex">memory</span> 2g <span class="co">#with 2gigs of memory</span>
+        <span class="ex">disk</span> <span class="va">$files</span> host.drive <span class="co"># running the host.drive</span>
+        <span class="ex">interface</span> tap { lladdr 00:00:00:00:00:02 switch localnet } <span class="co"># on a network interface with the specified MAC on the localnet switch</span>
+}
+
+<span class="ex">vm</span> foo-vm {
+        <span class="ex">memory</span> 2g
+        <span class="ex">disk</span> <span class="va">$files</span> foo.drive
+        <span class="ex">interface</span> tap { lladdr 00:00:00:00:00:03 switch localnet }
+}
+
+<span class="ex">vm</span> bar-vm {
+        <span class="ex">memory</span> 2g
+        <span class="ex">disk</span> <span class="va">$files</span> bar.drive
+        <span class="ex">interface</span> tap { lladdr 00:00:00:00:00:04 switch localnet }
+}
+
+<span class="ex">switch</span> localnet { <span class="co"># this is the switch called &quot;localnet&quot;</span>
+        <span class="ex">add</span> vether0 <span class="co"># where the virtual interface is added to</span>
+}</code></pre></td></tr></table></div>
 <p>So on lines 4, 10 and 16 I configured the specific VMs and on line 22 I configured the virtual switch that the VMs network interfaces are attached to.</p>
 <p>Then I enabled <code>vmd</code>:</p>
-<div class="sourceCode" id="cb64"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1"></a><span class="ex">doas</span> rcctl enable vmd</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> rcctl enable vmd</code></pre></div>
 <p>And restarted the server:</p>
-<div class="sourceCode" id="cb65"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb65-1"><a href="#cb65-1"></a><span class="ex">doas</span> reboot</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> reboot</code></pre></div>
 <h3 id="configuring-relayd-on-the-host-vm">Configuring relayd on the host-vm</h3>
 <p>The last task was the configuration of <code>relayd</code> on the host-vm.</p>
 <p>For this I logged into the host-vm, which should have been started automatically now at reboot:</p>
-<div class="sourceCode" id="cb66"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb66-1"><a href="#cb66-1"></a><span class="ex">doas</span> vmctl console host-vm</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> vmctl console host-vm</code></pre></div>
 <p>Then I configured relayd to redirect requests to my subdomains:</p>
-<div class="sourceCode" id="cb67"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb67-1"><a href="#cb67-1"></a><span class="co"># /etc/relayd.conf                                                                                       </span></span>
-<span id="cb67-2"><a href="#cb67-2"></a></span>
-<span id="cb67-3"><a href="#cb67-3"></a><span class="co">## MACROS</span></span>
-<span id="cb67-4"><a href="#cb67-4"></a></span>
-<span id="cb67-5"><a href="#cb67-5"></a><span class="dt">host_vm</span><span class="ot">=</span><span class="dv">192</span><span class="st">.</span><span class="dv">168</span><span class="st">.</span><span class="fl">30.2</span></span>
-<span id="cb67-6"><a href="#cb67-6"></a><span class="dt">foo_vm</span><span class="ot">=</span><span class="dv">192</span><span class="st">.</span><span class="dv">168</span><span class="st">.</span><span class="fl">30.3</span></span>
-<span id="cb67-7"><a href="#cb67-7"></a><span class="dt">bar_vm</span><span class="ot">=</span><span class="dv">192</span><span class="st">.</span><span class="dv">168</span><span class="st">.</span><span class="fl">30.4</span></span>
-<span id="cb67-8"><a href="#cb67-8"></a></span>
-<span id="cb67-9"><a href="#cb67-9"></a><span class="co">## TABLES</span></span>
-<span id="cb67-10"><a href="#cb67-10"></a></span>
-<span id="cb67-11"><a href="#cb67-11"></a><span class="dt">table &lt;foo_service&gt; { $foo_vm }</span></span>
-<span id="cb67-12"><a href="#cb67-12"></a><span class="dt">table &lt;bar_service&gt; { $bar_vm }</span></span>
-<span id="cb67-13"><a href="#cb67-13"></a></span>
-<span id="cb67-14"><a href="#cb67-14"></a><span class="co">## PROTOCOLS</span></span>
-<span id="cb67-15"><a href="#cb67-15"></a></span>
-<span id="cb67-16"><a href="#cb67-16"></a><span class="co"># define a new http protocol called &quot;reverseproxy&quot;</span></span>
-<span id="cb67-17"><a href="#cb67-17"></a><span class="dt">http protocol &quot;reverseproxy&quot; {</span></span>
-<span id="cb67-18"><a href="#cb67-18"></a><span class="dt">        </span></span>
-<span id="cb67-19"><a href="#cb67-19"></a><span class="dt">        </span><span class="co"># match a request that has a Host value with &quot;foo.hermes-technology.de&quot;</span></span>
-<span id="cb67-20"><a href="#cb67-20"></a><span class="dt">        </span><span class="co"># and forward that to the foo_service</span></span>
-<span id="cb67-21"><a href="#cb67-21"></a><span class="dt">        </span><span class="co"># &quot;quick&quot; means that it will be handled as the last rule if it matches... no other will be processed</span></span>
-<span id="cb67-22"><a href="#cb67-22"></a><span class="dt">        match request quick header &quot;Host&quot; value &quot;foo.hermes-technology.de&quot; \</span></span>
-<span id="cb67-23"><a href="#cb67-23"></a><span class="dt">                forward to &lt;foo_service&gt;</span></span>
-<span id="cb67-24"><a href="#cb67-24"></a></span>
-<span id="cb67-25"><a href="#cb67-25"></a><span class="dt">        match request quick header &quot;Host&quot; value &quot;www.hermes-technology.de&quot; \</span></span>
-<span id="cb67-26"><a href="#cb67-26"></a><span class="dt">                forward to &lt;foo_service&gt;</span></span>
-<span id="cb67-27"><a href="#cb67-27"></a><span class="dt">        </span></span>
-<span id="cb67-28"><a href="#cb67-28"></a><span class="dt">        match request quick header &quot;Host&quot; value &quot;bar.hermes-technology.de&quot; \</span></span>
-<span id="cb67-29"><a href="#cb67-29"></a><span class="dt">                forward to &lt;bar_service&gt;</span></span>
-<span id="cb67-30"><a href="#cb67-30"></a><span class="dt">}</span></span>
-<span id="cb67-31"><a href="#cb67-31"></a></span>
-<span id="cb67-32"><a href="#cb67-32"></a><span class="co">## RELAYS</span></span>
-<span id="cb67-33"><a href="#cb67-33"></a></span>
-<span id="cb67-34"><a href="#cb67-34"></a><span class="co"># create a new relay called &quot;proxy&quot;</span></span>
-<span id="cb67-35"><a href="#cb67-35"></a><span class="co"># relays are for layer 7 (e.g. http)</span></span>
-<span id="cb67-36"><a href="#cb67-36"></a><span class="dt">relay &quot;proxy&quot; {</span></span>
-<span id="cb67-37"><a href="#cb67-37"></a><span class="dt">        </span><span class="co"># the relay should listen on the host ip on port 80</span></span>
-<span id="cb67-38"><a href="#cb67-38"></a><span class="dt">        listen on $host_vm port 80</span></span>
-<span id="cb67-39"><a href="#cb67-39"></a><span class="dt">        </span></span>
-<span id="cb67-40"><a href="#cb67-40"></a><span class="dt">        </span><span class="co"># use the protocol &quot;reverseproxy&quot; we defined above</span></span>
-<span id="cb67-41"><a href="#cb67-41"></a><span class="dt">        protocol &quot;reverseproxy&quot;</span></span>
-<span id="cb67-42"><a href="#cb67-42"></a><span class="dt">        </span></span>
-<span id="cb67-43"><a href="#cb67-43"></a><span class="dt">        </span><span class="co"># forwarding is enabled for the specified services</span></span>
-<span id="cb67-44"><a href="#cb67-44"></a><span class="dt">        forward to &lt;foo_service&gt; port 80</span></span>
-<span id="cb67-45"><a href="#cb67-45"></a><span class="dt">        forward to &lt;bar_service&gt; port 80</span></span>
-<span id="cb67-46"><a href="#cb67-46"></a><span class="dt">}</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="co"># /etc/relayd.conf                                                                                       </span>
+
+<span class="co">## MACROS</span>
+
+<span class="dt">host_vm</span><span class="ot">=</span><span class="dv">192</span><span class="st">.</span><span class="dv">168</span><span class="st">.</span><span class="fl">30.2</span>
+<span class="dt">foo_vm</span><span class="ot">=</span><span class="dv">192</span><span class="st">.</span><span class="dv">168</span><span class="st">.</span><span class="fl">30.3</span>
+<span class="dt">bar_vm</span><span class="ot">=</span><span class="dv">192</span><span class="st">.</span><span class="dv">168</span><span class="st">.</span><span class="fl">30.4</span>
+
+<span class="co">## TABLES</span>
+
+<span class="dt">table &lt;foo_service&gt; { $foo_vm }</span>
+<span class="dt">table &lt;bar_service&gt; { $bar_vm }</span>
+
+<span class="co">## PROTOCOLS</span>
+
+<span class="co"># define a new http protocol called &quot;reverseproxy&quot;</span>
+<span class="dt">http protocol &quot;reverseproxy&quot; {</span>
+<span class="dt">        </span>
+<span class="dt">        </span><span class="co"># match a request that has a Host value with &quot;foo.hermes-technology.de&quot;</span>
+<span class="dt">        </span><span class="co"># and forward that to the foo_service</span>
+<span class="dt">        </span><span class="co"># &quot;quick&quot; means that it will be handled as the last rule if it matches... no other will be processed</span>
+<span class="dt">        match request quick header &quot;Host&quot; value &quot;foo.hermes-technology.de&quot; \</span>
+<span class="dt">                forward to &lt;foo_service&gt;</span>
+
+<span class="dt">        match request quick header &quot;Host&quot; value &quot;www.hermes-technology.de&quot; \</span>
+<span class="dt">                forward to &lt;foo_service&gt;</span>
+<span class="dt">        </span>
+<span class="dt">        match request quick header &quot;Host&quot; value &quot;bar.hermes-technology.de&quot; \</span>
+<span class="dt">                forward to &lt;bar_service&gt;</span>
+<span class="dt">}</span>
+
+<span class="co">## RELAYS</span>
+
+<span class="co"># create a new relay called &quot;proxy&quot;</span>
+<span class="co"># relays are for layer 7 (e.g. http)</span>
+<span class="dt">relay &quot;proxy&quot; {</span>
+<span class="dt">        </span><span class="co"># the relay should listen on the host ip on port 80</span>
+<span class="dt">        listen on $host_vm port 80</span>
+<span class="dt">        </span>
+<span class="dt">        </span><span class="co"># use the protocol &quot;reverseproxy&quot; we defined above</span>
+<span class="dt">        protocol &quot;reverseproxy&quot;</span>
+<span class="dt">        </span>
+<span class="dt">        </span><span class="co"># forwarding is enabled for the specified services</span>
+<span class="dt">        forward to &lt;foo_service&gt; port 80</span>
+<span class="dt">        forward to &lt;bar_service&gt; port 80</span>
+<span class="dt">}</span></code></pre></div>
 <p>The last task was to enable and start <code>relayd</code>:</p>
-<div class="sourceCode" id="cb68"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb68-1"><a href="#cb68-1"></a><span class="ex">doas</span> rcctl enable relayd</span>
-<span id="cb68-2"><a href="#cb68-2"></a><span class="ex">doas</span> rcctl start relayd</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">doas</span> rcctl enable relayd
+<span class="ex">doas</span> rcctl start relayd</code></pre></div>
 <h2 id="this-does-work-now">This does work now</h2>
 <p>Because I bought the domain hermes-technology.de and registered blog.hermes-technology.de as CNAME entries, the following does work:</p>
 <ol type="1">
 <li>Enter blog.hermes-technology.de anywhere into a webbrowser.</li>
-<li>The request lands at my main server’s ip (hermes-technology.de).</li>
+<li>The request lands at my main server's ip (hermes-technology.de).</li>
 <li>PF redirects any http requests to the host-vm on 192.168.30.2.</li>
-<li><code>relayd</code> on the host-vm redirects the “blog” subdomain request to the ip 192.168.30.3 of the blog-vm.</li>
+<li><code>relayd</code> on the host-vm redirects the &quot;blog&quot; subdomain request to the ip 192.168.30.3 of the blog-vm.</li>
 <li>The blog-vm and its httpd-service sends the response to its gateway 192.168.30.1</li>
 <li>The response on the vether0 gets a Network Address Translation (NAT) by <code>pf</code> to the router.</li>
 <li>The router sends the response to the client.</li>
 </ol>
 <h2 id="outlook">Outlook</h2>
-<p>In the next post I will explain how I set up a proper ssh connection to my server with a public key. Which is much safer than using a password. Also I will explain how to configure ssh-tunneling so that you login to your virtual servers from the workstation where you’re maintaining your server from. At last I will explain how I configured <code>pf</code> to do an ssh protection like <code>fail2ban</code> does.</p>
+<p>In the next post I will explain how I set up a proper ssh connection to my server with a public key. Which is much safer than using a password. Also I will explain how to configure ssh-tunneling so that you login to your virtual servers from the workstation where you're maintaining your server from. At last I will explain how I configured <code>pf</code> to do an ssh protection like <code>fail2ban</code> does.</p>
 
   </div>
 

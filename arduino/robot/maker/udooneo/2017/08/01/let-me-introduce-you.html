@@ -10,7 +10,7 @@
   <meta name="description" content="I&#39;ve always wanted to build a robot, but yet I did not build one! In this introduction I will shortly write about what I want to do about this dilemma and th...">
 
   <link rel="stylesheet" href="/assets/main.css">
-  <link rel="canonical" href="http://blog.hermes-technology.de/arduino/robot/maker/udooneo/2017/08/01/let-me-introduce-you.html">
+  <link rel="canonical" href="https://blog.hermes-technology.de/arduino/robot/maker/udooneo/2017/08/01/let-me-introduce-you.html">
   <link rel="alternate" type="application/rss+xml" title="Hermes Technology Blog" href="/feed.xml">
   
   
@@ -104,7 +104,7 @@
 	  </div>
 
 	  <div class="project-banner">
-		  <img class="project-img" src="http://blog.hermes-technology.de/assets/rob-the-robot-banner-header.svg.png" alt="Rob the Robot"/>
+		  <img class="project-img" src="https://blog.hermes-technology.de/assets/rob-the-robot-banner-header.svg.png" alt="Rob the Robot"/>
 		  <!--h1 class="project-title" itemprop="project banner">Rob the Robot</h1-->
 
 	  <!--
@@ -224,23 +224,23 @@
 
 
   <div class="post-content" itemprop="articleBody">
-    <p>And now for something completely different - Number 1… the larch.</p>
+    <p>And now for something completely different - Number 1... the larch.</p>
 <figure>
-<img src="/assets/the-larch.jpg" title="the larch" alt="" /><figcaption>The larch</figcaption>
+<img src="/assets/the-larch.jpg" title="the larch" alt="The larch" /><figcaption>The larch</figcaption>
 </figure>
-<p>… Number 3… the robot.</p>
+<p>... Number 3... the robot.</p>
 <p>Hello dear reader,</p>
-<p>I will now write about something completely different. It’s not about a larch, but I would like to build a robot! For backing up my explanations I include a figure that shows a rough overview on what this project is about, and how I would like to achieve my goals:</p>
+<p>I will now write about something completely different. It's not about a larch, but I would like to build a robot! For backing up my explanations I include a figure that shows a rough overview on what this project is about, and how I would like to achieve my goals:</p>
 <figure>
 <figcaption>
-<i>Figure 1: Rob’s concept</i>
+<i>Figure 1: Rob's concept</i>
 </figcaption>
-<img src="http://blog.hermes-technology.de/assets/rob-the-robot-env.svg.png" title="fig:Figure 1: Robs concept" alt="Robs concept" />
+<img src="https://blog.hermes-technology.de/assets/rob-the-robot-env.svg.png" title="Figure 1: Robs concept" alt="Robs concept" />
 </figure>
 <p>I decided to distinguish between three ability domains for Rob:</p>
 <p>Firstly, there is the <strong>Arduino microcontoller</strong> (ARM Cortex-M4), which is responsible for all critical controlling that has to be done in real time. I also added the <strong>Adafruit Motorshield</strong> on my Udoo Neo board for an easy way to control any kind of motor that I want to integrate for the robot. Examples for those critical tasks would be a balancing controller or an automatic halt-system that fires before hitting walls or falling into an abyss. The balancing controller will, as soon as the robot will be running on two wheels, stabilize R.O.B. in real-time. For those tasks I will add specific parts like an array of ultrasonic sensors for distance queries or use existing components on the board like the magnetometer, accelerometer and the gyroscope.</p>
 <p>Secondly, also on the Udoo Neo board, there is the <strong>ARM Cortex-A9</strong>. The software running on there will perform simple computations and provide an interface for interactions with Rob. By way of example I could think about path finding algorithms and simple data storage and retrieval. It will enable the possibility to interact with the robot via WLAN or bluetooth. The Cortex-M4 and Cortex-A9 can communicate via an i²c bus.</p>
-<p>At last I will also integrate the <strong>server</strong>. So while being on this project I will also need the functionality of my server that I’m building in the “My OpenBSD Server” project. The server will be performing more expensive computations that include the establishment of neuronal networks for voice or face recognition.</p>
+<p>At last I will also integrate the <strong>server</strong>. So while being on this project I will also need the functionality of my server that I'm building in the &quot;My OpenBSD Server&quot; project. The server will be performing more expensive computations that include the establishment of neuronal networks for voice or face recognition.</p>
 <p>So all in all the basic mechanical and sensor functionality will run on the microcontroller, more sophisticated operations and WLAN interfacing will be done with the arm, and the server provides some kind of AI.</p>
 <p>While working on this project, the server I built is not out of my focus, I will continue to add more functionality and document my configurations in this blog. At the moment I also have to work on two non-private projects that consume a lot of resources, so I will be a little bit thwarted on the OpenBSD server and robot project for the next two month.</p>
 <p>So I hope to write to you soon, until next post.</p>
