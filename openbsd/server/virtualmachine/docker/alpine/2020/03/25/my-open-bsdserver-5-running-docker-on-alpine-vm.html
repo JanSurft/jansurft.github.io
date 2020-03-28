@@ -409,84 +409,84 @@
 <p>data disk</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">doas</span> vmctl create -s 20G /mnt/data/vm-drives/alpine-data.img</code></pre></div>
 <p>Modify <code>vm.conf</code></p>
-<div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="dt">files</span><span class="ot">=</span><span class="st">  /home/web-spider/vm/</span>
+<pre class="hocon"><code>files=  /home/web-spider/vm/
 
-<span class="dt">data</span><span class="ot">=</span><span class="st">   /mnt/data/vm-drives/</span>
+data=   /mnt/data/vm-drives/
 
-<span class="dt">vm host-vm {</span>
-<span class="dt">    memory 2g</span>
-<span class="dt">    disk $files host.drive</span>
-<span class="dt">    interface tap { lladdr 00:00:00:00:00:02 switch localnet }</span>
-<span class="dt">}</span>
+vm host-vm {
+    memory 2g
+    disk $files host.drive
+    interface tap { lladdr 00:00:00:00:00:02 switch localnet }
+}
 
-<span class="dt">vm alpine-vm {</span>
-<span class="dt">    memory 2g</span>
-<span class="dt">    interface tap { lladdr 00:00:00:00:00:06 switch localnet }</span>
-<span class="dt">    disk &quot;/mnt/data/vm-drives/alpine.drive&quot; format raw</span>
-<span class="dt">    disk &quot;/mnt/data/vm-drives/alpine-data.img&quot; format raw</span>
-<span class="dt">}</span>
+vm alpine-vm {
+    memory 2g
+    interface tap { lladdr 00:00:00:00:00:06 switch localnet }
+    disk &quot;/mnt/data/vm-drives/alpine.drive&quot; format raw
+    disk &quot;/mnt/data/vm-drives/alpine-data.img&quot; format raw
+}
 
 
-<span class="dt">switch localnet {</span>
-<span class="dt">    interface bridge0</span>
-<span class="dt">}</span></code></pre></div>
+switch localnet {
+    interface bridge0
+}</code></pre>
 <p>Restart <code>vmd</code></p>
-<pre><code>doas rcctl restart vmd</code></pre>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">doas</span> rcctl restart vmd</code></pre></div>
 <h2 id="inside-alpine-vm">Inside alpine vm</h2>
 <ol type="1">
 <li>Connect to alpine-vm via <code>doas vmctl console alpine-vm</code></li>
 <li>Update config file extlinux.conf</li>
 </ol>
 <p>!! Everything inside tags <code>&lt;...&gt;</code> must be substituted by your values !!</p>
-<pre><code>SERIAL 0 115200
-DEFAULT &lt;dist&gt;
-PROMPT 0
-LABEL &lt;dist&gt;
-  MENU LABEL Linux &lt;dist&gt;
-  LINUX vmlinuz-&lt;dist&gt;
-  INITRD initramfs-&lt;dist&gt;
-  APPEND root=UUID=&lt;uuid&gt; modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,115200</code></pre>
+<div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="dt">SERIAL 0 115200</span>
+<span class="dt">DEFAULT &lt;dist&gt;</span>
+<span class="dt">PROMPT 0</span>
+<span class="dt">LABEL &lt;dist&gt;</span>
+<span class="dt">  MENU LABEL Linux &lt;dist&gt;</span>
+<span class="dt">  LINUX vmlinuz-&lt;dist&gt;</span>
+<span class="dt">  INITRD initramfs-&lt;dist&gt;</span>
+<span class="dt">  APPEND root</span><span class="ot">=</span><span class="st">UUID=&lt;uuid&gt; modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,</span><span class="dv">115200</span></code></pre></div>
 <p>And example might look like this:</p>
-<pre><code>SERIAL 0 115200
-DEFAULT hardened
-PROMPT 0
-LABEL hardened
-  MENU LABEL Linux hardened
-  LINUX vmlinuz-hardened
-  INITRD initramfs-hardened
-  APPEND root=UUID=001c5e4f-af70-4f6f-bdbc-ceff9d23c6f3 modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,115200</code></pre>
+<div class="sourceCode"><pre class="sourceCode ini"><code class="sourceCode ini"><span class="dt">SERIAL 0 115200</span>
+<span class="dt">DEFAULT hardened</span>
+<span class="dt">PROMPT 0</span>
+<span class="dt">LABEL hardened</span>
+<span class="dt">  MENU LABEL Linux hardened</span>
+<span class="dt">  LINUX vmlinuz-hardened</span>
+<span class="dt">  INITRD initramfs-hardened</span>
+<span class="dt">  APPEND root</span><span class="ot">=</span><span class="st">UUID=001c5e4f-af70-4f6f-bdbc-ceff9d23c6f3 modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,</span><span class="dv">115200</span></code></pre></div>
 <ol start="3" type="1">
 <li><p>Reboot and reconnect to vm</p></li>
 <li><p>modify repositories</p></li>
 </ol>
-<pre><code>#/etc/apk/repositories
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co">#/etc/apk/repositories</span>
 
-#/media/cdrom/apks
-http://dl-cdn.alpinelinux.org/alpine/v3.11/main
-http://dl-cdn.alpinelinux.org/alpine/v3.11/community
-#http://dl-cdn.alpinelinux.org/alpine/edge/main
-#http://dl-cdn.alpinelinux.org/alpine/edge/community
-#http://dl-cdn.alpinelinux.org/alpine/edge/testing</code></pre>
+<span class="co">#/media/cdrom/apks</span>
+<span class="ex">http</span>://dl-cdn.alpinelinux.org/alpine/v3.11/main
+<span class="ex">http</span>://dl-cdn.alpinelinux.org/alpine/v3.11/community
+<span class="co">#http://dl-cdn.alpinelinux.org/alpine/edge/main</span>
+<span class="co">#http://dl-cdn.alpinelinux.org/alpine/edge/community</span>
+<span class="co">#http://dl-cdn.alpinelinux.org/alpine/edge/testing</span></code></pre></div>
 <ol start="5" type="1">
 <li>update repos</li>
 </ol>
-<pre><code>apk update
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">apk</span> update
 
-apk add util-linux</code></pre>
+<span class="ex">apk</span> add util-linux</code></pre></div>
 <ol start="6" type="1">
 <li>Add user and groups</li>
 </ol>
-<pre><code># add some user e.g. named &quot;general&quot;
-adduser general
-# install sudo package
-apk add sudo
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># add some user e.g. named &quot;general&quot;</span>
+<span class="ex">adduser</span> general
+<span class="co"># install sudo package</span>
+<span class="ex">apk</span> add sudo
 
-# add user to groups
-for u in $(ls /home); do for g in disk lp floppy audio cdrom dialout video netdev games users wheel; do addgroup $u $g; done;done
+<span class="co"># add user to groups</span>
+<span class="kw">for</span> <span class="ex">u</span> in <span class="va">$(</span><span class="fu">ls</span> /home<span class="va">)</span><span class="kw">;</span> <span class="kw">do</span> <span class="kw">for</span> <span class="ex">g</span> in disk lp floppy audio cdrom dialout video netdev games users wheel<span class="kw">;</span> <span class="kw">do</span> <span class="ex">addgroup</span> <span class="va">$u</span> <span class="va">$g</span><span class="kw">;</span> <span class="kw">done</span>;<span class="kw">done</span>
 
-# edit sudoers file to allow users of group wheel
-sed -i &#39;s/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/g&#39; /etc
-/sudoers</code></pre>
+<span class="co"># edit sudoers file to allow users of group wheel</span>
+<span class="fu">sed</span> -i <span class="st">&#39;s/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/g&#39;</span> /etc
+<span class="ex">/sudoers</span></code></pre></div>
 <ol start="7" type="1">
 <li>Modify <code>/etc/ssh/sshd_config</code></li>
 </ol>
@@ -613,7 +613,7 @@ sed -i &#39;s/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/g&#39; /etc
 <span class="dt">    PubkeyAuthentication yes</span>
 <span class="dt">    AuthenticationMethods publickey</span></code></pre></div>
 <p>add authorized keys from your workstation (e.g. copy and paste it)</p>
-<pre><code>echo &quot;ssh-ed25519 SD323f928392i31sadfklsjdf37824 someone@some-workstation&quot; &gt; authorized_keys</code></pre>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="bu">echo</span> <span class="st">&quot;ssh-ed25519 SD323f928392i31sadfklsjdf37824 someone@some-workstation&quot;</span> <span class="op">&gt;</span> authorized_keys</code></pre></div>
 <p>Login to the alpine machine from your workstation which is more comfortable</p>
 <h2 id="create-new-disk-on-alpine">Create new disk on alpine</h2>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># change to root</span>

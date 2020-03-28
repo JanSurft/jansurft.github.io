@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://blog.hermes-technology.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.hermes-technology.de/" rel="alternate" type="text/html" /><updated>2020-03-28T18:26:30+01:00</updated><id>https://blog.hermes-technology.de/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://blog.hermes-technology.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.hermes-technology.de/" rel="alternate" type="text/html" /><updated>2020-03-28T18:34:53+01:00</updated><id>https://blog.hermes-technology.de/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
 </subtitle><entry><title type="html">Running Docker on an Alpine VM</title><link href="https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html" rel="alternate" type="text/html" title="Running Docker on an Alpine VM" /><published>2020-03-25T15:00:00+01:00</published><updated>2020-03-25T15:00:00+01:00</updated><id>https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm</id><content type="html" xml:base="https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html">&lt;div id=&quot;toc&quot;&gt;
 
 &lt;/div&gt;
@@ -182,84 +182,84 @@
 &lt;p&gt;data disk&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; vmctl create -s 20G /mnt/data/vm-drives/alpine-data.img&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Modify &lt;code&gt;vm.conf&lt;/code&gt;&lt;/p&gt;
-&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode ini&quot;&gt;&lt;code class=&quot;sourceCode ini&quot;&gt;&lt;span class=&quot;dt&quot;&gt;files&lt;/span&gt;&lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;st&quot;&gt;  /home/web-spider/vm/&lt;/span&gt;
+&lt;pre class=&quot;hocon&quot;&gt;&lt;code&gt;files=  /home/web-spider/vm/
 
-&lt;span class=&quot;dt&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;st&quot;&gt;   /mnt/data/vm-drives/&lt;/span&gt;
+data=   /mnt/data/vm-drives/
 
-&lt;span class=&quot;dt&quot;&gt;vm host-vm {&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;    memory 2g&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;    disk $files host.drive&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;    interface tap { lladdr 00:00:00:00:00:02 switch localnet }&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;}&lt;/span&gt;
+vm host-vm {
+    memory 2g
+    disk $files host.drive
+    interface tap { lladdr 00:00:00:00:00:02 switch localnet }
+}
 
-&lt;span class=&quot;dt&quot;&gt;vm alpine-vm {&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;    memory 2g&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;    interface tap { lladdr 00:00:00:00:00:06 switch localnet }&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;    disk &amp;quot;/mnt/data/vm-drives/alpine.drive&amp;quot; format raw&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;    disk &amp;quot;/mnt/data/vm-drives/alpine-data.img&amp;quot; format raw&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;}&lt;/span&gt;
+vm alpine-vm {
+    memory 2g
+    interface tap { lladdr 00:00:00:00:00:06 switch localnet }
+    disk &amp;quot;/mnt/data/vm-drives/alpine.drive&amp;quot; format raw
+    disk &amp;quot;/mnt/data/vm-drives/alpine-data.img&amp;quot; format raw
+}
 
 
-&lt;span class=&quot;dt&quot;&gt;switch localnet {&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;    interface bridge0&lt;/span&gt;
-&lt;span class=&quot;dt&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+switch localnet {
+    interface bridge0
+}&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Restart &lt;code&gt;vmd&lt;/code&gt;&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;doas rcctl restart vmd&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;doas&lt;/span&gt; rcctl restart vmd&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;h2 id=&quot;inside-alpine-vm&quot;&gt;Inside alpine vm&lt;/h2&gt;
 &lt;ol type=&quot;1&quot;&gt;
 &lt;li&gt;Connect to alpine-vm via &lt;code&gt;doas vmctl console alpine-vm&lt;/code&gt;&lt;/li&gt;
 &lt;li&gt;Update config file extlinux.conf&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;!! Everything inside tags &lt;code&gt;&amp;lt;...&amp;gt;&lt;/code&gt; must be substituted by your values !!&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;SERIAL 0 115200
-DEFAULT &amp;lt;dist&amp;gt;
-PROMPT 0
-LABEL &amp;lt;dist&amp;gt;
-  MENU LABEL Linux &amp;lt;dist&amp;gt;
-  LINUX vmlinuz-&amp;lt;dist&amp;gt;
-  INITRD initramfs-&amp;lt;dist&amp;gt;
-  APPEND root=UUID=&amp;lt;uuid&amp;gt; modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,115200&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode ini&quot;&gt;&lt;code class=&quot;sourceCode ini&quot;&gt;&lt;span class=&quot;dt&quot;&gt;SERIAL 0 115200&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;DEFAULT &amp;lt;dist&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;PROMPT 0&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;LABEL &amp;lt;dist&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;  MENU LABEL Linux &amp;lt;dist&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;  LINUX vmlinuz-&amp;lt;dist&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;  INITRD initramfs-&amp;lt;dist&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;  APPEND root&lt;/span&gt;&lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;st&quot;&gt;UUID=&amp;lt;uuid&amp;gt; modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,&lt;/span&gt;&lt;span class=&quot;dv&quot;&gt;115200&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;And example might look like this:&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;SERIAL 0 115200
-DEFAULT hardened
-PROMPT 0
-LABEL hardened
-  MENU LABEL Linux hardened
-  LINUX vmlinuz-hardened
-  INITRD initramfs-hardened
-  APPEND root=UUID=001c5e4f-af70-4f6f-bdbc-ceff9d23c6f3 modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,115200&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode ini&quot;&gt;&lt;code class=&quot;sourceCode ini&quot;&gt;&lt;span class=&quot;dt&quot;&gt;SERIAL 0 115200&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;DEFAULT hardened&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;PROMPT 0&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;LABEL hardened&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;  MENU LABEL Linux hardened&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;  LINUX vmlinuz-hardened&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;  INITRD initramfs-hardened&lt;/span&gt;
+&lt;span class=&quot;dt&quot;&gt;  APPEND root&lt;/span&gt;&lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;st&quot;&gt;UUID=001c5e4f-af70-4f6f-bdbc-ceff9d23c6f3 modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,&lt;/span&gt;&lt;span class=&quot;dv&quot;&gt;115200&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;ol start=&quot;3&quot; type=&quot;1&quot;&gt;
 &lt;li&gt;&lt;p&gt;Reboot and reconnect to vm&lt;/p&gt;&lt;/li&gt;
 &lt;li&gt;&lt;p&gt;modify repositories&lt;/p&gt;&lt;/li&gt;
 &lt;/ol&gt;
-&lt;pre&gt;&lt;code&gt;#/etc/apk/repositories
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;co&quot;&gt;#/etc/apk/repositories&lt;/span&gt;
 
-#/media/cdrom/apks
-http://dl-cdn.alpinelinux.org/alpine/v3.11/main
-http://dl-cdn.alpinelinux.org/alpine/v3.11/community
-#http://dl-cdn.alpinelinux.org/alpine/edge/main
-#http://dl-cdn.alpinelinux.org/alpine/edge/community
-#http://dl-cdn.alpinelinux.org/alpine/edge/testing&lt;/code&gt;&lt;/pre&gt;
+&lt;span class=&quot;co&quot;&gt;#/media/cdrom/apks&lt;/span&gt;
+&lt;span class=&quot;ex&quot;&gt;http&lt;/span&gt;://dl-cdn.alpinelinux.org/alpine/v3.11/main
+&lt;span class=&quot;ex&quot;&gt;http&lt;/span&gt;://dl-cdn.alpinelinux.org/alpine/v3.11/community
+&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/main&lt;/span&gt;
+&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/community&lt;/span&gt;
+&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/testing&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;ol start=&quot;5&quot; type=&quot;1&quot;&gt;
 &lt;li&gt;update repos&lt;/li&gt;
 &lt;/ol&gt;
-&lt;pre&gt;&lt;code&gt;apk update
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;apk&lt;/span&gt; update
 
-apk add util-linux&lt;/code&gt;&lt;/pre&gt;
+&lt;span class=&quot;ex&quot;&gt;apk&lt;/span&gt; add util-linux&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;ol start=&quot;6&quot; type=&quot;1&quot;&gt;
 &lt;li&gt;Add user and groups&lt;/li&gt;
 &lt;/ol&gt;
-&lt;pre&gt;&lt;code&gt;# add some user e.g. named &amp;quot;general&amp;quot;
-adduser general
-# install sudo package
-apk add sudo
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;co&quot;&gt;# add some user e.g. named &amp;quot;general&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;ex&quot;&gt;adduser&lt;/span&gt; general
+&lt;span class=&quot;co&quot;&gt;# install sudo package&lt;/span&gt;
+&lt;span class=&quot;ex&quot;&gt;apk&lt;/span&gt; add sudo
 
-# add user to groups
-for u in $(ls /home); do for g in disk lp floppy audio cdrom dialout video netdev games users wheel; do addgroup $u $g; done;done
+&lt;span class=&quot;co&quot;&gt;# add user to groups&lt;/span&gt;
+&lt;span class=&quot;kw&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;ex&quot;&gt;u&lt;/span&gt; in &lt;span class=&quot;va&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;fu&quot;&gt;ls&lt;/span&gt; /home&lt;span class=&quot;va&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;kw&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;kw&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;kw&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;ex&quot;&gt;g&lt;/span&gt; in disk lp floppy audio cdrom dialout video netdev games users wheel&lt;span class=&quot;kw&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;kw&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;ex&quot;&gt;addgroup&lt;/span&gt; &lt;span class=&quot;va&quot;&gt;$u&lt;/span&gt; &lt;span class=&quot;va&quot;&gt;$g&lt;/span&gt;&lt;span class=&quot;kw&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;kw&quot;&gt;done&lt;/span&gt;;&lt;span class=&quot;kw&quot;&gt;done&lt;/span&gt;
 
-# edit sudoers file to allow users of group wheel
-sed -i &amp;#39;s/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/g&amp;#39; /etc
-/sudoers&lt;/code&gt;&lt;/pre&gt;
+&lt;span class=&quot;co&quot;&gt;# edit sudoers file to allow users of group wheel&lt;/span&gt;
+&lt;span class=&quot;fu&quot;&gt;sed&lt;/span&gt; -i &lt;span class=&quot;st&quot;&gt;&amp;#39;s/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/g&amp;#39;&lt;/span&gt; /etc
+&lt;span class=&quot;ex&quot;&gt;/sudoers&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;ol start=&quot;7&quot; type=&quot;1&quot;&gt;
 &lt;li&gt;Modify &lt;code&gt;/etc/ssh/sshd_config&lt;/code&gt;&lt;/li&gt;
 &lt;/ol&gt;
@@ -386,7 +386,7 @@ sed -i &amp;#39;s/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/g&amp;#39; /etc
 &lt;span class=&quot;dt&quot;&gt;    PubkeyAuthentication yes&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;    AuthenticationMethods publickey&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;add authorized keys from your workstation (e.g. copy and paste it)&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;echo &amp;quot;ssh-ed25519 SD323f928392i31sadfklsjdf37824 someone@some-workstation&amp;quot; &amp;gt; authorized_keys&lt;/code&gt;&lt;/pre&gt;
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;bu&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;st&quot;&gt;&amp;quot;ssh-ed25519 SD323f928392i31sadfklsjdf37824 someone@some-workstation&amp;quot;&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&lt;/span&gt; authorized_keys&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;Login to the alpine machine from your workstation which is more comfortable&lt;/p&gt;
 &lt;h2 id=&quot;create-new-disk-on-alpine&quot;&gt;Create new disk on alpine&lt;/h2&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;co&quot;&gt;# change to root&lt;/span&gt;
