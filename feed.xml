@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://blog.hermes-technology.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.hermes-technology.de/" rel="alternate" type="text/html" /><updated>2020-03-28T22:49:00+01:00</updated><id>https://blog.hermes-technology.de/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://blog.hermes-technology.de/feed.xml" rel="self" type="application/atom+xml" /><link href="https://blog.hermes-technology.de/" rel="alternate" type="text/html" /><updated>2020-03-29T09:07:39+02:00</updated><id>https://blog.hermes-technology.de/feed.xml</id><title type="html">Hermes Technology Blog</title><subtitle>This is a blog about technology. I will write about the experiences I encounter, when working on my server infrastructure, building roboter(s), or developing any kind of software on the way.
 </subtitle><entry><title type="html">Running Docker on an Alpine VM</title><link href="https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html" rel="alternate" type="text/html" title="Running Docker on an Alpine VM" /><published>2020-03-25T15:00:00+01:00</published><updated>2020-03-25T15:00:00+01:00</updated><id>https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm</id><content type="html" xml:base="https://blog.hermes-technology.de/openbsd/server/virtualmachine/docker/alpine/2020/03/25/my-open-bsdserver-5-running-docker-on-alpine-vm.html">&lt;div id=&quot;toc&quot;&gt;
 
 &lt;/div&gt;
@@ -226,6 +226,7 @@ switch localnet {
 &lt;ol type=&quot;1&quot;&gt;
 &lt;li&gt;Connect to alpine-vm via &lt;code&gt;doas vmctl console alpine-vm&lt;/code&gt;&lt;/li&gt;
 &lt;li&gt;Update config file &lt;code&gt;/boot/extlinux.conf&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Reboot and reconnect to vm&lt;/li&gt;
 &lt;/ol&gt;
 &lt;div class=&quot;fromTheFuture&quot;&gt;
 &lt;table&gt;
@@ -234,12 +235,12 @@ switch localnet {
 &lt;/colgroup&gt;
 &lt;thead&gt;
 &lt;tr class=&quot;header&quot;&gt;
-&lt;th&gt;&lt;strong&gt;Important...&lt;/strong&gt;&lt;/th&gt;
+&lt;th&gt;&lt;strong&gt;Important&lt;/strong&gt;&lt;/th&gt;
 &lt;/tr&gt;
 &lt;/thead&gt;
 &lt;tbody&gt;
 &lt;tr class=&quot;odd&quot;&gt;
-&lt;td&gt;&lt;pre&gt;&lt;code&gt;        !! Everything inside tags `&amp;lt;...&amp;gt;` must be substituted by your values !!&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;&amp;lt;uuid&amp;gt;&lt;/code&gt; and &lt;code&gt;&amp;lt;dist&amp;gt;&lt;/code&gt; must be substituted by your specific values, in mycase &lt;code&gt;&amp;lt;dist&amp;gt;&lt;/code&gt; was &lt;code&gt;virt&lt;/code&gt; and &lt;code&gt;&amp;lt;uuid&amp;gt;&lt;/code&gt; was &lt;code&gt;001c5e4f-af70-4f6f-bdbc-ceff9d23c6f3&lt;/code&gt;&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
@@ -252,7 +253,7 @@ switch localnet {
 &lt;span class=&quot;dt&quot;&gt;  LINUX vmlinuz-&amp;lt;dist&amp;gt;&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;  INITRD initramfs-&amp;lt;dist&amp;gt;&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;  APPEND root&lt;/span&gt;&lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;st&quot;&gt;UUID=&amp;lt;uuid&amp;gt; modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,&lt;/span&gt;&lt;span class=&quot;dv&quot;&gt;115200&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;And example might look like this:&lt;/p&gt;
+&lt;p&gt;My configuration looked like this in the end:&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode ini&quot;&gt;&lt;code class=&quot;sourceCode ini&quot;&gt;&lt;span class=&quot;dt&quot;&gt;SERIAL 0 115200&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;DEFAULT virt&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;PROMPT 0&lt;/span&gt;
@@ -261,26 +262,15 @@ switch localnet {
 &lt;span class=&quot;dt&quot;&gt;  LINUX vmlinuz-virt&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;  INITRD initramfs-virt&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;  APPEND root&lt;/span&gt;&lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;st&quot;&gt;UUID=001c5e4f-af70-4f6f-bdbc-ceff9d23c6f3 modules=sd-mod,usb-storage,ext4 rootfstype=ext4 console=ttyS0,&lt;/span&gt;&lt;span class=&quot;dv&quot;&gt;115200&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;ol start=&quot;3&quot; type=&quot;1&quot;&gt;
-&lt;li&gt;&lt;p&gt;Reboot and reconnect to vm&lt;/p&gt;&lt;/li&gt;
-&lt;li&gt;&lt;p&gt;modify repositories&lt;/p&gt;&lt;/li&gt;
-&lt;/ol&gt;
-&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;co&quot;&gt;#/etc/apk/repositories&lt;/span&gt;
-
-&lt;span class=&quot;co&quot;&gt;#/media/cdrom/apks&lt;/span&gt;
-&lt;span class=&quot;ex&quot;&gt;http&lt;/span&gt;://dl-cdn.alpinelinux.org/alpine/v3.11/main
-&lt;span class=&quot;ex&quot;&gt;http&lt;/span&gt;://dl-cdn.alpinelinux.org/alpine/v3.11/community
-&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/main&lt;/span&gt;
-&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/community&lt;/span&gt;
-&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/testing&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;ol start=&quot;5&quot; type=&quot;1&quot;&gt;
-&lt;li&gt;update repos&lt;/li&gt;
-&lt;/ol&gt;
-&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;ex&quot;&gt;apk&lt;/span&gt; update
-
-&lt;span class=&quot;ex&quot;&gt;apk&lt;/span&gt; add util-linux&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;ol start=&quot;6&quot; type=&quot;1&quot;&gt;
-&lt;li&gt;Add user and groups&lt;/li&gt;
+&lt;h3 id=&quot;enable-ssh-access-to-the-alpine-vm&quot;&gt;Enable SSH-Access to the alpine-vm&lt;/h3&gt;
+&lt;p&gt;For a more comfortable and generally better user experience, I enabled ssh access to the VM. To enable ssh access with the possibility to execute root commands, I installed &lt;code&gt;sudo&lt;/code&gt;, created a user and configured &lt;code&gt;openssh&lt;/code&gt; accordingly.&lt;/p&gt;
+&lt;p&gt;The procedure was as follows&lt;/p&gt;
+&lt;ol type=&quot;1&quot;&gt;
+&lt;li&gt;Add user and groups, configure &lt;code&gt;sudo&lt;/code&gt; for group &lt;code&gt;wheel&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Modify &lt;code&gt;/etc/ssh/sshd_config&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Add the desired public-key from the workstation&lt;/li&gt;
+&lt;li&gt;Restart &lt;code&gt;sshd&lt;/code&gt; or reboot the VM&lt;/li&gt;
+&lt;li&gt;Connect to the vm via &lt;code&gt;ssh&lt;/code&gt;&lt;/li&gt;
 &lt;/ol&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;co&quot;&gt;# add some user e.g. named &amp;quot;general&amp;quot;&lt;/span&gt;
 &lt;span class=&quot;ex&quot;&gt;adduser&lt;/span&gt; general
@@ -293,9 +283,7 @@ switch localnet {
 &lt;span class=&quot;co&quot;&gt;# edit sudoers file to allow users of group wheel&lt;/span&gt;
 &lt;span class=&quot;fu&quot;&gt;sed&lt;/span&gt; -i &lt;span class=&quot;st&quot;&gt;&amp;#39;s/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/g&amp;#39;&lt;/span&gt; /etc
 &lt;span class=&quot;ex&quot;&gt;/sudoers&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;ol start=&quot;7&quot; type=&quot;1&quot;&gt;
-&lt;li&gt;Modify &lt;code&gt;/etc/ssh/sshd_config&lt;/code&gt;&lt;/li&gt;
-&lt;/ol&gt;
+&lt;p&gt;My configuration file for the open ssh daemon looks like the one below, for a better security I also referred an earlier post on &lt;a href=&quot;/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html&quot;&gt;how to make ssh configuration more secure&lt;/a&gt;. :&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode ini&quot;&gt;&lt;code class=&quot;sourceCode ini&quot;&gt;&lt;span class=&quot;co&quot;&gt;#   $OpenBSD: sshd_config,v 1.103 2018/04/09 20:41:22 tj Exp $&lt;/span&gt;
 
 &lt;span class=&quot;co&quot;&gt;# This is the sshd server system-wide configuration file.  See&lt;/span&gt;
@@ -419,13 +407,28 @@ switch localnet {
 &lt;span class=&quot;dt&quot;&gt;    PubkeyAuthentication yes&lt;/span&gt;
 &lt;span class=&quot;dt&quot;&gt;    AuthenticationMethods publickey&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;add authorized keys from your workstation (e.g. copy and paste it)&lt;/p&gt;
-&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;bu&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;st&quot;&gt;&amp;quot;ssh-ed25519 SD323f928392i31sadfklsjdf37824 someone@some-workstation&amp;quot;&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&lt;/span&gt; authorized_keys&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Login to the alpine machine from your workstation which is more comfortable&lt;/p&gt;
-&lt;h2 id=&quot;create-new-disk-on-alpine&quot;&gt;Create new disk on alpine&lt;/h2&gt;
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;bu&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;st&quot;&gt;&amp;quot;ssh-ed25519 SD323f928392i31sadfklsjdf37824 someone@some-workstation&amp;quot;&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&lt;/span&gt; authorized_keys
+
+&lt;span class=&quot;co&quot;&gt;# restart the sshd service&lt;/span&gt;
+&lt;span class=&quot;ex&quot;&gt;rc-service&lt;/span&gt; sshd restart&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I logged in to the alpine machine from my workstation via ssh which was more comfortable. I did this by using my server as a jumphost into the vm. I covered the configuration of such an entry in a &lt;a href=&quot;/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#access-virtual-machines-via-ssh-on-my-workstation&quot;&gt;previous post&lt;/a&gt;.&lt;/p&gt;
+&lt;h3 id=&quot;create-a-new-filesystem-and-mount-the-data-disk&quot;&gt;Create a new filesystem and mount the data disk&lt;/h3&gt;
+&lt;p&gt;Modify the repositories in &lt;code&gt;/etc/apk/repositories&lt;/code&gt; and update them afterwards via &lt;code&gt;apk update&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;co&quot;&gt;#/etc/apk/repositories&lt;/span&gt;
+
+&lt;span class=&quot;co&quot;&gt;#/media/cdrom/apks&lt;/span&gt;
+&lt;span class=&quot;ex&quot;&gt;http&lt;/span&gt;://dl-cdn.alpinelinux.org/alpine/v3.11/main
+&lt;span class=&quot;ex&quot;&gt;http&lt;/span&gt;://dl-cdn.alpinelinux.org/alpine/v3.11/community
+&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/main&lt;/span&gt;
+&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/community&lt;/span&gt;
+&lt;span class=&quot;co&quot;&gt;#http://dl-cdn.alpinelinux.org/alpine/edge/testing&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;ol start=&quot;5&quot; type=&quot;1&quot;&gt;
+&lt;li&gt;update repos&lt;/li&gt;
+&lt;/ol&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;co&quot;&gt;# change to root&lt;/span&gt;
 &lt;span class=&quot;fu&quot;&gt;sudo&lt;/span&gt; -s
 
-&lt;span class=&quot;co&quot;&gt;# install linux utils&lt;/span&gt;
+&lt;span class=&quot;co&quot;&gt;# install linux utils (for lsblk)&lt;/span&gt;
 &lt;span class=&quot;ex&quot;&gt;apk&lt;/span&gt; add util-linux
 
 &lt;span class=&quot;co&quot;&gt;# check the disks&lt;/span&gt;
@@ -434,9 +437,10 @@ switch localnet {
 &lt;span class=&quot;co&quot;&gt;# use parted, so install it&lt;/span&gt;
 &lt;span class=&quot;ex&quot;&gt;apk&lt;/span&gt; add parted
 
-&lt;span class=&quot;co&quot;&gt;# execute parted (in my case with vdb&lt;/span&gt;
+&lt;span class=&quot;co&quot;&gt;# execute parted (in my case with device vdb)&lt;/span&gt;
 &lt;span class=&quot;ex&quot;&gt;parted&lt;/span&gt; vdb
 
+&lt;span class=&quot;co&quot;&gt;## now inside the parted-shell:&lt;/span&gt;
 &lt;span class=&quot;co&quot;&gt;# configure new gpt label&lt;/span&gt;
 &lt;span class=&quot;kw&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ex&quot;&gt;parted&lt;/span&gt;&lt;span class=&quot;kw&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ex&quot;&gt;mklabel&lt;/span&gt; gpt
 
@@ -469,7 +473,7 @@ switch localnet {
 
 &lt;span class=&quot;co&quot;&gt;# mount it&lt;/span&gt;
 &lt;span class=&quot;fu&quot;&gt;mount&lt;/span&gt; /data&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;docker-on-a-separate-disk&quot;&gt;Docker on a separate disk&lt;/h2&gt;
+&lt;h2 id=&quot;install-docker-and-make-it-use-the-data-disk&quot;&gt;Install Docker and make it use the data-disk&lt;/h2&gt;
 &lt;p&gt;Install Docker&lt;/p&gt;
 &lt;div class=&quot;sourceCode&quot;&gt;&lt;pre class=&quot;sourceCode sh&quot;&gt;&lt;code class=&quot;sourceCode bash&quot;&gt;&lt;span class=&quot;fu&quot;&gt;sudo&lt;/span&gt; apk add docker
 
