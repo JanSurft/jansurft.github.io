@@ -155,6 +155,9 @@ pre {
   padding-top: 5px;
   padding-bottom: 5px; }
 
+.important {
+  background: red; }
+
 .fromTheFuture {
   background: black;
   color: white;
