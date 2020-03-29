@@ -658,7 +658,7 @@ switch localnet {
 <span class="ex">rc-service</span> sshd restart</code></pre></div>
 <p>I logged in to the alpine machine from my workstation via ssh which was more comfortable. I did this by using my server as a jumphost into the vm. I covered the configuration of such an entry in a <a href="/2017/06/21/my-openbsd-server-3-making-ssh-more-secure.html#access-virtual-machines-via-ssh-on-my-workstation">previous post</a>.</p>
 <h3 id="create-a-new-filesystem-and-mount-the-data-disk">Create a new filesystem and mount the data disk</h3>
-<p>Modify the repositories in <code>/etc/apk/repositories</code> and update them afterwards via <code>apk update</code></p>
+<p>Modify the repositories in <code>/etc/apk/repositories</code> to include the <code>community</code> packages and update them afterwards via <code>apk update</code>. I used <code>comminity</code> to check the available disks via <code>lsblk</code> command.</p>
 <div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co">#/etc/apk/repositories</span>
 
 <span class="co">#/media/cdrom/apks</span>
